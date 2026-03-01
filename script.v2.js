@@ -162,7 +162,7 @@ logoutBtn.addEventListener('click', () => {
 async function initApp() {
     loginContainer.classList.add('hidden');
     appContainer.classList.remove('hidden');
-    headerEmailDisplay.textContent = currentDisplayName;
+    headerEmailDisplay.textContent = '- ' + currentDisplayName;
 
     await fetchData();
 }
@@ -252,19 +252,15 @@ function renderChecklist() {
 
     // Sort groups chronologically
     const sortedGroups = Object.values(grouped).sort((a, b) => {
-        // Active view: oldest first (Ascending). Archives view: newest first (Descending)
-        if (currentViewMode === 'ACTIVE') {
-            return a.sortDate - b.sortDate;
-        } else {
-            return b.sortDate - a.sortDate;
-        }
+        // Active view: newest first (Descending). Archives view: newest first (Descending)
+        return b.sortDate - a.sortDate;
     });
 
     sortedGroups.forEach(groupDesc => {
         const monthKey = groupDesc.label;
         const sortedItems = groupDesc.items.sort((a, b) => {
-            // Unchanged: items inside the month are still oldest first
-            return new Date(a.dueDate) - new Date(b.dueDate);
+            // Newest items sit at the top inside the month block
+            return new Date(b.dueDate) - new Date(a.dueDate);
         });
 
         // Build table for this month block
