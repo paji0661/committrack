@@ -68,6 +68,7 @@
                 </div>
                 <!-- Unified actions group in header (Compact Links) -->
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                    <button id="about-btn" class="nav-link">About</button>
                     <button id="view-archives-btn" class="nav-link">Archives</button>
                     <button id="view-active-btn" class="nav-link hidden">Back to Active</button>
                     <button id="share-ledger-btn" class="nav-link">Share Ledger</button>
@@ -92,7 +93,7 @@
 
             <div class="section-header">
                 <h2 id="checklist-title">Active Commitments</h2>
-                <button id="show-add-commitment-btn" class="btn btn-sm btn-primary">+ Add Item</button>
+                <button id="show-add-commitment-btn" class="btn btn-sm btn-primary">+ Add List</button>
             </div>
 
             <!-- Dynamic Table container for grouped list -->
@@ -107,7 +108,7 @@
                     <line x1="9" y1="21" x2="9" y2="9"></line>
                 </svg>
                 <h2 id="empty-state-title">No Active Items</h2>
-                <p id="empty-state-desc">You're all caught up! Click '+ Add Item' to create a new monthly commitment.
+                <p id="empty-state-desc">You're all caught up! Click '+ Add List' to create a new monthly commitment.
                 </p>
             </div>
 
@@ -145,6 +146,31 @@
                     <button type="submit" class="btn btn-primary">Share Month</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="about-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>About Family Analytics</h2>
+                <button class="close-btn" onclick="closeAboutModal()">&times;</button>
+            </div>
+            <div style="color: var(--text-main); font-size: 0.95rem; line-height: 1.6;">
+                <p style="margin-bottom: 1rem;">Welcome to the Family Commitment Tracker!</p>
+                <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; color: var(--text-muted);">
+                    <li style="margin-bottom: 0.5rem;"><strong>Add List:</strong> Record your monthly family expenses or
+                        commitments here.</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Status:</strong> Mark items as "Paid" once settled.</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Archive (📦):</strong> Click the box icon on Paid items
+                        to move them into the Archives history.</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Share Ledger:</strong> Invite your spouse or family
+                        members to view and edit this month's ledger together.</li>
+                    <li><strong>Privacy:</strong> Data entered here is securely scrambled in the database.</li>
+                </ul>
+                <button class="btn btn-primary" style="width: 100%; justify-content: center;"
+                    onclick="closeAboutModal()">Understood</button>
+            </div>
         </div>
     </div>
 
