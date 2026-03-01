@@ -317,7 +317,7 @@ function renderChecklist() {
                 actionsHtml += `<button class="nav-link text-danger" onclick="deleteCommitmentEntry('${item.id}', '${item.folderId}')" title="Delete">🗑️</button>`;
             }
 
-            const amountFormatted = parseFloat(item.amount).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+            const amountFormatted = parseFloat(item.amount).toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
 
             tr.innerHTML = `
                 <td>${nameColHtml}</td>

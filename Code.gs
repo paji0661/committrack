@@ -416,52 +416,80 @@ function getAllMyCommitments(email) {
     }
   });
   
-  // Headers: ID, FolderID, Name, Amount, Due Date, Status
-  for (let i = 1; i < data.length; i++) {
-    if (!data[i][0]) continue; 
-    
-    const fId = data[i][1].toString();
-    if (accessibleIds.includes(fId)) {
-      commitments.push({
-        id: data[i][0].toString(),
-        folderId: fId,
-        sourceLedger: folderOwnerMap[fId],
-        name: data[i][2].toString(),
-        amount: parseFloat(data[i][3]) || 0,
-        dueDate: data[i][4] instanceof Date ? data[i][4].toISOString().split('T')[0] : data[i][4].toString(),
-        status: data[i][5].toString()
-      });
+    // Headers: ID, FolderID, Name, Amount, Due Date, Status
+    for (let i = 1; i < data.length; i++) {
+        if (!data[i][0]) continue; 
+        
+        const fId = data[i][1].toString();
+        if (accessibleIds.includes(fId)) {
+            let decodedName = "Unknown";
+            let decodedAmount = 0;
+            
+            // Try to decode Base64. If it fails, assume it's legacy plaintext
+            try {
+                decodedName = Utilities.newBlob(Utilities.base64Decode(data[i][2].toString())).getDataAsString();
+                decodedAmount = parseFloat(Utilities.newBlob(Utilities.base64Decode(data[i][3].toString())).getDataAsString()) || 0;
+            } catch (e) {
+                decodedName = data[i][2].toString();
+                decodedAmount = parseFloat(data[i][3]) || 0;
+            }
+
+            commitments.push({
+                id: data[i][0].toString(),
+                folderId: fId,
+                sourceLedger: folderOwnerMap[fId],
+                name: decodedName,
+                amount: decodedAmount,
+                dueDate: data[i][4] instanceof Date ? data[i][4].toISOString().split('T')[0] : data[i][4].toString(),
+                status: data[i][5].toString()
+            });
+        }
     }
-  }
   return commitments;
 }
 
 function addCommitment(folderId, payload) {
-  const sheet = getDb().getSheetByName('Commitments');
-  const id = Utilities.getUuid();
-  const name = payload.name;
-  const amount = parseFloat(payload.amount) || 0;
-  const dueDate = payload.dueDate; 
-  const status = payload.status || 'Pending';
-  
-  sheet.appendRow([id, folderId, name, amount, dueDate, status]);
-  return { id, folderId, name, amount, dueDate, status };
+    const sheet = getDb().getSheetByName('Commitments');
+    const id = Utilities.getUuid();
+    
+    // Obfuscate (Encrypt) data into Base64 to hide from sheet casual view
+    const nameStr = payload.name.toString();
+    const amountStr = (parseFloat(payload.amount) || 0).toString();
+    
+    const encodedName = Utilities.base64Encode(Utilities.newBlob(nameStr).getBytes());
+    const encodedAmount = Utilities.base64Encode(Utilities.newBlob(amountStr).getBytes());
+    
+    const dueDate = payload.dueDate; 
+    const status = payload.status || 'Pending';
+    
+    // Store obfuscated values in Sheet
+    sheet.appendRow([id, folderId, encodedName, encodedAmount, dueDate, status]);
+    
+    // Return plaintext back to UI state
+    return { id, folderId, name: payload.name, amount: parseFloat(payload.amount) || 0, dueDate, status };
 }
 
 function editCommitment(folderId, payload) {
-  const sheet = getDb().getSheetByName('Commitments');
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0].toString() === payload.id && data[i][1].toString() === folderId) {
-      sheet.getRange(i + 1, 3).setValue(payload.name);
-      sheet.getRange(i + 1, 4).setValue(parseFloat(payload.amount) || 0);
-      sheet.getRange(i + 1, 5).setValue(payload.dueDate);
-      if (payload.status) {
-        sheet.getRange(i + 1, 6).setValue(payload.status);
-      }
-      return true;
+    const sheet = getDb().getSheetByName('Commitments');
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+        if (data[i][0].toString() === payload.id && data[i][1].toString() === folderId) {
+            
+            const nameStr = payload.name.toString();
+            const amountStr = (parseFloat(payload.amount) || 0).toString();
+            
+            const encodedName = Utilities.base64Encode(Utilities.newBlob(nameStr).getBytes());
+            const encodedAmount = Utilities.base64Encode(Utilities.newBlob(amountStr).getBytes());
+
+            sheet.getRange(i + 1, 3).setValue(encodedName);
+            sheet.getRange(i + 1, 4).setValue(encodedAmount);
+            sheet.getRange(i + 1, 5).setValue(payload.dueDate);
+            if (payload.status) {
+                sheet.getRange(i + 1, 6).setValue(payload.status);
+            }
+            return true;
+        }
     }
-  }
   throw new Error('Commitment not found in this folder');
 }
 
