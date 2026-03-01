@@ -445,6 +445,7 @@ td {
     padding: 0.5rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-size: 0.85rem;
+    vertical-align: middle;
 }
 
 th {
@@ -488,7 +489,8 @@ tbody tr:hover {
 .row-actions {
     display: flex;
     gap: 0.5rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    align-items: center;
 }
 
 /* Checkbox UI */
