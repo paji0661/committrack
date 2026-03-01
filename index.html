@@ -126,8 +126,8 @@
     <!-- Modals -->
 
     <!-- Share Ledger Modal -->
-    <div id="share-ledger-modal" class="modal-overlay hidden">
-        <div class="modal">
+    <div id="share-ledger-modal" class="modal hidden">
+        <div class="modal-content">
             <h3 style="margin-bottom:1.5rem">Share Monthly Ledger</h3>
             <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
                 Invite a user to view and edit commitments for a specific month.
@@ -150,60 +150,46 @@
     </div>
 
     <!-- About Modal -->
-    <div id="about-modal" class="modal-overlay hidden">
-        <div class="modal">
+    <div id="about-modal" class="modal hidden">
+        <div class="modal-content">
             <div class="modal-header">
                 <h2>About Family Analytics</h2>
                 <button class="close-btn" onclick="closeAboutModal()">&times;</button>
             </div>
             <div
-                style="color: var(--text-main); font-size: 0.95rem; line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 1rem;">
-                <p style="margin-bottom: 1rem;"><strong>Objektif Projek (Family Analytics Web App)</strong><br>
+                style="color: var(--text-main); font-size: 0.8rem; line-height: 1.5; max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
+                <p style="margin-bottom: 0.75rem;"><strong>Objektif Projek (Family Analytics Web App)</strong><br>
                     Aplikasi ini dibina sebagai Platform Pengurusan Kewangan (Commitment Tracker) Keluarga yang Pintar,
                     Cepat, dan Tersusun.</p>
 
-                <p style="margin-bottom: 1rem;">Tujuan utama aplikasi ini adalah untuk menyelesaikan masalah terlupa
-                    bayar komitmen bulanan (seperti bil air, elektrik, yuran sekolah, atau hutang) dan memudahkan
+                <p style="margin-bottom: 0.75rem;">Tujuan utama aplikasi ini adalah untuk menyelesaikan masalah terlupa
+                    bayar komitmen bulanan (seperti bil air, elektrik, yuran sekolah, atau hutang).<br>Ia memudahkan
                     pemantauan kewangan bersama dengan ahli keluarga yang lain.</p>
 
-                <p style="margin-bottom: 0.5rem;">Berikut adalah 4 Fungsi &amp; Kelebihan Utama aplikasi ini:</p>
+                <p style="margin-bottom: 0.5rem;"><strong>4 Fungsi &amp; Kelebihan Utama:</strong></p>
 
                 <ol
-                    style="margin-left: 1.5rem; margin-bottom: 1.5rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.75rem;">
-                    <li><strong>Senarai Semak Bulanan yang Sistematik (Monthly Checklist)</strong><br>
-                        User tidak perlu lagi pening menyusun fail. Setiap kali komitmen ditambah, sistem akan automatik
-                        asingkan mengikut Bulan dan Tahun. User hanya perlu fokus untuk "Tick" dan selesaikan komitmen
-                        pada bulan tersebut sahaja.</li>
-                    <li><strong>Fungsi Kolaborasi Bersama Keluarga (Ledger Sharing)</strong><br>
-                        User boleh Share senarai komitmen (Ledger) bulan tertentu terus kepada email pasangan atau ahli
-                        keluarga (contoh: share bulan "March 2026"). Ini membolehkan suami isteri saling bantu-membantu
-                        memantau bil apa yang sudah atau belum dibayar secara Real-Time.</li>
-                    <li><strong>Tindakan Pantas Berkelompok (Batch Update)</strong><br>
-                        Bagi menjimatkan masa, user boleh menanda pelbagai komitmen (checkbox) serentak dan tekan butang
-                        "Update List" untuk merekod semuanya sebagai "Paid" dengan hanya sekali klik tanpa menunggu
-                        lama.</li>
-                    <li><strong>Penjejakan Arkib &amp; Analitik Selesai Pembayaran</strong><br>
-                        Sistem dilengkapi fungsi pengarkiban (Archive). Segala pembayaran yang telah selesaikan dan
-                        di-arkib akan disusun rapi di ruangan "Completed Archives" mengikut kronologi tahun. Dashboard
-                        juga akan memaparkan graf ringkas bajet bagi membezakan nilai Ringgit yang masih "Pending" dan
-                        telah "Paid".</li>
+                    style="margin-left: 1.25rem; margin-bottom: 1rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.75rem;">
+                    <li><strong>Senarai Semak Bulanan (Checklist)</strong><br>Sistem automatik asingkan senarai mengikut
+                        Bulan. Anda hanya perlu "Tick" dan selesaikan bil bulan tersebut sahaja.</li>
+                    <li><strong>Kolaborasi (Ledger Sharing)</strong><br>Share senarai komitmen bulan tertentu terus
+                        kepada email pasangan untuk pantau bil secara Real-Time.</li>
+                    <li><strong>Tindakan Pantas (Batch Update)</strong><br>Tanda pelbagai checkbox serentak dan tekan
+                        butang "Update List" untuk merekod semuanya sebagai "Paid" dengan sepantas kilat.</li>
+                    <li><strong>Penjejakan Arkib &amp; Analitik</strong><br>Bayaran selesai akan di-arkib dengan rapi.
+                        Dashboard juga memaparkan graf ringkas status bajet bulanan.</li>
                 </ol>
 
-                <p style="margin-bottom: 1rem;"><strong>Secara ringkasnya:</strong> Projek ini menukar pengurusan
-                    kewangan manual di atas kertas/Google Sheet yang berselerak, kepada satu paparan Web Moden (Dark
-                    Theme) yang kemas, pantas, dan boleh diakses di mana-mana gadget secara selamat melalui log masuk
-                    Google.</p>
-            </div>
-            <div class="modal-actions" style="margin-top: 1.5rem; justify-content: flex-end;">
-                <button type="button" class="btn btn-outline" style="width: auto;"
-                    onclick="closeAboutModal()">Kembali</button>
+                <p style="margin-bottom: 0;"><strong>Secara ringkasnya:</strong> Projek ini menukar pengurusan manual
+                    kertas berselerak kepada Web Moden yang kemas, pantas, dan boleh diakses di mana-mana gadget secara
+                    selamat.</p>
             </div>
         </div>
     </div>
 
     <!-- Add/Edit Commitment Modal -->
-    <div id="commitment-modal" class="modal-overlay hidden">
-        <div class="modal">
+    <div id="commitment-modal" class="modal hidden">
+        <div class="modal-content">
             <h3 id="modal-title" style="margin-bottom:1.5rem">Add Item</h3>
             <form id="commitment-form">
                 <input type="hidden" id="entry-id">
