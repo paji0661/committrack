@@ -77,13 +77,13 @@ h4 {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+    padding: 0.5rem 1rem;
     border-radius: var(--radius-sm);
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     border: none;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
 }
 
 .btn:hover {
@@ -120,8 +120,8 @@ h4 {
 }
 
 .btn-sm {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
 }
 
 .btn-success {
@@ -423,14 +423,15 @@ table {
 
 th,
 td {
-    padding: 1rem;
+    padding: 0.75rem 0.6rem;
     border-bottom: 1px solid var(--surface);
+    font-size: 0.9rem;
 }
 
 th {
     color: var(--text-muted);
     font-weight: 500;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     background: rgba(0, 0, 0, 0.2);
@@ -645,17 +646,20 @@ select:focus {
         gap: 0.75rem;
     }
 
-    /* Make buttons huge and easy to press on mobile */
+    /* Ensure buttons aren't too massive on mobile anymore */
     .btn {
-        padding: 1rem;
-        font-size: 1rem;
         width: 100%;
         justify-content: center;
     }
 
+    /* Except for buttons inside the table row actions */
+    .row-actions .btn {
+        width: auto;
+    }
+
     .btn-sm {
-        padding: 0.85rem;
-        font-size: 0.95rem;
+        padding: 0.5rem;
+        font-size: 0.8rem;
     }
 
     /* Tables need to scroll widely to avoid crashing layout */
@@ -668,7 +672,7 @@ select:focus {
     th,
     td {
         white-space: nowrap;
-        padding: 1rem;
+        padding: 0.6rem;
     }
 
     .folder-grid {
