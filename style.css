@@ -163,7 +163,7 @@ h4 {
     width: 100%;
     max-width: 1000px;
     margin: 0 auto;
-    padding: 2rem 1.5rem;
+    padding: 1.5rem 1rem;
 }
 
 .hidden {
@@ -237,8 +237,8 @@ h4 {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid var(--border);
 }
 
@@ -303,8 +303,8 @@ h4 {
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1.5rem;
-    margin-bottom: 3rem;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 @media (min-width: 768px) {
@@ -314,17 +314,17 @@ h4 {
 }
 
 .card {
-    background: rgba(30, 41, 59, 0.6);
+    background: rgba(30, 41, 59, 0.4);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-md);
-    padding: 1.5rem;
+    border-radius: var(--radius-sm);
+    padding: 1rem;
 }
 
 .chart-container {
     position: relative;
-    height: 250px;
+    height: 180px;
     width: 100%;
 }
 
@@ -361,8 +361,8 @@ h4 {
 .folder-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
 .folder-card {
@@ -429,9 +429,9 @@ h4 {
 .table-responsive {
     width: 100%;
     overflow-x: auto;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
+    background: transparent;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
 }
 
 table {
@@ -442,18 +442,18 @@ table {
 
 th,
 td {
-    padding: 0.75rem 0.6rem;
-    border-bottom: 1px solid var(--surface);
-    font-size: 0.9rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.85rem;
 }
 
 th {
     color: var(--text-muted);
     font-weight: 500;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    background: rgba(0, 0, 0, 0.2);
+    background: transparent;
 }
 
 tbody tr:last-child td {
@@ -466,10 +466,11 @@ tbody tr:hover {
 
 .status-badge {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
-    border-radius: 99px;
-    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
     font-weight: 600;
+    text-transform: uppercase;
 }
 
 .status-pending {
@@ -645,7 +646,7 @@ select:focus {
     .app-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 1rem;
+        gap: 0.5rem;
     }
 
     .app-header h1 {
@@ -653,22 +654,23 @@ select:focus {
     }
 
     .section-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
     }
 
     .section-header>div {
-        width: 100%;
+        width: auto;
         display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
+        flex-direction: row;
+        gap: 0.5rem;
     }
 
-    /* Ensure buttons aren't too massive on mobile anymore */
-    .btn {
-        width: 100%;
-        justify-content: center;
+    /* Ensure primary buttons aren't massive on mobile, but still full width */
+    .btn.btn-primary {
+        width: auto;
+        padding: 0.5rem 1rem;
     }
 
     /* Except for buttons inside the table row actions */

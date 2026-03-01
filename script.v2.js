@@ -309,16 +309,16 @@ function renderChecklist() {
                     // Place checkbox in Actions column instead of name column
                     actionsHtml += `<input type="checkbox" class="modern-checkbox" onchange="toggleBatchSelection(this, '${item.id}', '${item.folderId}')" ${checkedState} style="margin-right: 0.5rem">`;
                 } else if (item.status === 'Paid') {
-                    actionsHtml += `<button class="btn btn-sm" style="background:var(--border); color:var(--text-main)" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Archived')" title="Archive">📦</button>`;
+                    actionsHtml += `<button class="nav-link" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Archived')" title="Archive">📦</button>`;
                 }
                 actionsHtml += `
-                    <button class="btn btn-sm btn-outline" onclick="openEditCommitmentModal('${item.id}', '${item.folderId}')" title="Edit">✏️</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteCommitmentEntry('${item.id}', '${item.folderId}')" title="Delete">🗑️</button>
+                    <button class="nav-link" onclick="openEditCommitmentModal('${item.id}', '${item.folderId}')" title="Edit">✏️</button>
+                    <button class="nav-link text-danger" onclick="deleteCommitmentEntry('${item.id}', '${item.folderId}')" title="Delete">🗑️</button>
                  `;
             } else {
                 // Archived View Actions
-                actionsHtml += `<button class="btn btn-sm btn-outline" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Paid')" title="Unarchive">↩️</button>`;
-                actionsHtml += `<button class="btn btn-sm btn-danger" onclick="deleteCommitmentEntry('${item.id}', '${item.folderId}')" title="Delete">🗑️</button>`;
+                actionsHtml += `<button class="nav-link" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Paid')" title="Unarchive">↩️</button>`;
+                actionsHtml += `<button class="nav-link text-danger" onclick="deleteCommitmentEntry('${item.id}', '${item.folderId}')" title="Delete">🗑️</button>`;
             }
 
             const amountFormatted = parseFloat(item.amount).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
