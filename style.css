@@ -480,16 +480,6 @@ tbody tr:hover {
     border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
-/* Force widths to prevent collapsing on PC */
-.col-actions {
-    width: 60px;
-}
-
-.col-checkbox {
-    width: 30px;
-    text-align: right;
-}
-
 .status-paid {
     background-color: rgba(16, 185, 129, 0.1);
     color: #6ee7b7;
@@ -498,7 +488,7 @@ tbody tr:hover {
 
 .row-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 1rem;
     flex-wrap: nowrap;
     align-items: center;
 }

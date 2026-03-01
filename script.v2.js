@@ -278,8 +278,7 @@ function renderChecklist() {
                             <th>Amount</th>
                             <th>Due Date</th>
                             <th>Status</th>
-                            <th class="col-actions">Actions</th>
-                            <th class="col-checkbox"></th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -305,12 +304,16 @@ function renderChecklist() {
                 if (item.status === 'Pending') {
                     const checkedState = selectedForBatch.find(u => u.id === item.id) ? 'checked' : '';
                     checkboxHtml = `<input type="checkbox" class="modern-checkbox" onchange="toggleBatchSelection(this, '${item.id}', '${item.folderId}')" ${checkedState}>`;
+                    // Dimmed archive button
+                    actionsHtml += `<button class="nav-link" style="opacity: 0.3; cursor: not-allowed;" title="Must be Paid to Archive">📦</button>`;
                 } else if (item.status === 'Paid') {
                     actionsHtml += `<button class="nav-link" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Archived')" title="Archive">📦</button>`;
                 }
+
                 actionsHtml += `
                     <button class="nav-link" onclick="openEditCommitmentModal('${item.id}', '${item.folderId}')" title="Edit">✏️</button>
                     <button class="nav-link text-danger" onclick="deleteCommitmentEntry('${item.id}', '${item.folderId}')" title="Delete">🗑️</button>
+                    ${checkboxHtml}
                  `;
             } else {
                 // Archived View Actions
@@ -326,8 +329,7 @@ function renderChecklist() {
                 <td>${amountFormatted}</td>
                 <td>${item.dueDate}</td>
                 <td><span class="status-badge ${statusClass}">${item.status}</span></td>
-                <td class="col-actions"><div class="row-actions">${actionsHtml}</div></td>
-                <td class="col-checkbox" style="vertical-align: middle;">${checkboxHtml}</td>
+                <td><div class="row-actions">${actionsHtml}</div></td>
             `;
             tbody.appendChild(tr);
         });
