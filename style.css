@@ -491,6 +491,8 @@ tbody tr:hover {
     gap: 1rem;
     flex-wrap: nowrap;
     align-items: center;
+    justify-content: flex-start;
+    width: 100%;
 }
 
 /* Checkbox UI */
