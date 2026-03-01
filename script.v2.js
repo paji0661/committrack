@@ -278,8 +278,8 @@ function renderChecklist() {
                             <th>Amount</th>
                             <th>Due Date</th>
                             <th>Status</th>
-                            <th>Actions</th>
-                            <th></th>
+                            <th class="col-actions">Actions</th>
+                            <th class="col-checkbox"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -326,8 +326,8 @@ function renderChecklist() {
                 <td>${amountFormatted}</td>
                 <td>${item.dueDate}</td>
                 <td><span class="status-badge ${statusClass}">${item.status}</span></td>
-                <td><div class="row-actions" style="gap: 0.5rem">${actionsHtml}</div></td>
-                <td style="text-align: right; vertical-align: middle;">${checkboxHtml}</td>
+                <td class="col-actions"><div class="row-actions">${actionsHtml}</div></td>
+                <td class="col-checkbox" style="vertical-align: middle;">${checkboxHtml}</td>
             `;
             tbody.appendChild(tr);
         });
