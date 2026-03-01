@@ -279,6 +279,7 @@ function renderChecklist() {
                             <th>Due Date</th>
                             <th>Status</th>
                             <th>Actions</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -298,12 +299,12 @@ function renderChecklist() {
 
             let actionsHtml = '';
             let nameColHtml = `<strong>${item.name}</strong>`;
+            let checkboxHtml = '';
 
             if (currentViewMode === 'ACTIVE') {
                 if (item.status === 'Pending') {
                     const checkedState = selectedForBatch.find(u => u.id === item.id) ? 'checked' : '';
-                    // Place checkbox in Actions column instead of name column
-                    actionsHtml += `<input type="checkbox" class="modern-checkbox" onchange="toggleBatchSelection(this, '${item.id}', '${item.folderId}')" ${checkedState} style="margin-right: 0.5rem">`;
+                    checkboxHtml = `<input type="checkbox" class="modern-checkbox" onchange="toggleBatchSelection(this, '${item.id}', '${item.folderId}')" ${checkedState}>`;
                 } else if (item.status === 'Paid') {
                     actionsHtml += `<button class="nav-link" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Archived')" title="Archive">📦</button>`;
                 }
@@ -326,6 +327,7 @@ function renderChecklist() {
                 <td>${item.dueDate}</td>
                 <td><span class="status-badge ${statusClass}">${item.status}</span></td>
                 <td><div class="row-actions" style="gap: 0.5rem">${actionsHtml}</div></td>
+                <td style="text-align: right; vertical-align: middle;">${checkboxHtml}</td>
             `;
             tbody.appendChild(tr);
         });
