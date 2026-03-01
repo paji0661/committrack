@@ -25,6 +25,8 @@ const headerEmailDisplay = document.getElementById('header-email-display');
 const logoutBtn = document.getElementById('logout-btn');
 
 // View Toggles
+const addCommitmentBtn = document.getElementById('show-add-commitment-btn');
+const aboutBtn = document.getElementById('about-btn');
 const viewArchivesBtn = document.getElementById('view-archives-btn');
 const viewActiveBtn = document.getElementById('view-active-btn');
 const shareLedgerBtn = document.getElementById('share-ledger-btn');
@@ -51,6 +53,7 @@ const shareLedgerForm = document.getElementById('share-ledger-form');
 const shareEmailInput = document.getElementById('share-email-input');
 const shareMonthInput = document.getElementById('share-month-input');
 
+const aboutModal = document.getElementById('about-modal');
 const commitmentModal = document.getElementById('commitment-modal');
 const closeCommitmentModalBtn = document.getElementById('close-commitment-modal-btn');
 const commitmentForm = document.getElementById('commitment-form');
@@ -182,6 +185,14 @@ async function fetchData() {
 }
 
 // Toggles
+aboutBtn.addEventListener('click', () => {
+    aboutModal.classList.remove('hidden');
+});
+
+function closeAboutModal() {
+    aboutModal.classList.add('hidden');
+}
+
 viewArchivesBtn.addEventListener('click', () => {
     currentViewMode = 'ARCHIVED';
     viewArchivesBtn.classList.add('hidden');
