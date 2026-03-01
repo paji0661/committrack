@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Analytics - Checklist UI</title>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Full-screen Loading Overlay -->
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <!-- LOGIN SECTION -->
+        <div id="login-container" class="login-container">
+            <div class="login-card">
+                <h1>Family Analytics</h1>
+                <p style="color: var(--text-muted); margin-bottom: 2rem;">Secure Sign In</p>
+
+                <div id="g_id_signin" class="g_id_signin" data-type="standard" data-shape="rectangular"
+                    data-theme="outline" data-text="signin_with" data-size="large" data-logo_alignment="left">
+                </div>
+
+                <div class="hidden" id="register-container" style="margin-top: 1.5rem;">
+                    <p style="color: var(--text-main);">Welcome, <strong id="register-email-display"></strong>!</p>
+                    <p style="font-size: 0.875rem; margin-top:0.5rem; margin-bottom: 1rem;">Your email is not recognized
+                        in the database yet.</p>
+                    <form id="register-form" style="text-align: left;">
+                        <div class="form-group">
+                            <label>Your Display Name</label>
+                            <input type="text" id="register-name-input" required placeholder="e.g. Papa, Mama, Addey">
+                        </div>
+                        <button type="submit" id="register-btn" class="btn btn-primary" style="width: 100%;">Create
+                            Account</button>
+                    </form>
+                </div>
+
+                <p id="login-error" class="error-msg hidden">Access denied.</p>
+            </div>
+            <!-- Google Client ID Configures Auth -->
+            <div id="g_id_onload"
+                data-client_id="187408044110-bhtm3t4v2ib896cbem5goa4h9v5urtjr.apps.googleusercontent.com"
+                data-context="signin" data-ux_mode="popup" data-callback="handleCredentialResponse"
+                data-auto_prompt="false">
+            </div>
+        </div>
+
+        <!-- MAIN APP -->
+        <div id="app-container" class="hidden">
+            <header class="app-header">
+                <div>
+                    <h1>Family Analytics</h1>
+                    <p class="user-info">
+                        <span id="header-email-display">Name</span>
+                    </p>
+                </div>
+                <!-- Unified actions group in header -->
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <button id="view-archives-btn" class="btn btn-sm btn-outline">Archives</button>
+                    <button id="view-active-btn" class="btn btn-sm btn-outline hidden">Back to Active</button>
+                    <button id="share-ledger-btn" class="btn btn-sm btn-outline">Share Ledger</button>
+                    <button id="logout-btn" class="btn btn-sm btn-danger">Logout</button>
+                </div>
+            </header>
+
+            <!-- Active View: Global Analytics -->
+            <div id="analytics-section">
+                <div class="dashboard-grid" style="margin-bottom: 3rem;">
+                    <div class="card">
+                        <h3
+                            style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">
+                            Active Monthly Checklist Spend</h3>
+                        <div class="chart-container">
+                            <canvas id="overviewChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 3rem 0;">
+            </div> <!-- End Active View Analytics -->
+
+            <div class="section-header">
+                <h2 id="checklist-title">Active Commitments</h2>
+                <button id="show-add-commitment-btn" class="btn btn-sm btn-primary">+ Add Item</button>
+            </div>
+
+            <!-- Dynamic Table container for grouped list -->
+            <div id="commitments-wrapper" style="margin-bottom: 3rem;">
+                <!-- Tables injected here grouped by month by JS -->
+            </div>
+
+            <div id="commitments-empty-state" class="empty-state hidden">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>
+                <h2 id="empty-state-title">No Active Items</h2>
+                <p id="empty-state-desc">You're all caught up! Click '+ Add Item' to create a new monthly commitment.
+                </p>
+            </div>
+
+        </div> <!-- End App Container -->
+
+        <!-- Floating FAB for Batch Save -->
+        <div id="batch-action-bar" class="hidden"
+            style="position: fixed; bottom: 2rem; right: 2rem; z-index: 50; background: var(--card-bg); padding: 1rem 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--primary-main); box-shadow: 0 10px 25px rgba(0,240,255,0.2); display: flex; align-items: center; gap: 1rem;">
+            <span id="batch-count-display" style="font-weight: 600; color: var(--text-main);">0 Selected</span>
+            <button id="batch-update-btn" class="btn btn-primary">Update List (Mark Paid)</button>
+        </div>
+
+    </div> <!-- End Container -->
+
+    <!-- Modals -->
+
+    <!-- Share Ledger Modal -->
+    <div id="share-ledger-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <h3 style="margin-bottom:1.5rem">Share Monthly Ledger</h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Invite a user to view and edit commitments for a specific month.
+            </p>
+            <form id="share-ledger-form">
+                <div class="form-group">
+                    <label>Target Month (e.g. March 2026)</label>
+                    <input type="month" id="share-month-input" required>
+                </div>
+                <div class="form-group">
+                    <label>User's Google Email</label>
+                    <input type="email" id="share-email-input" required placeholder="example@gmail.com">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" id="close-share-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Share Month</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Commitment Modal -->
+    <div id="commitment-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <h3 id="modal-title" style="margin-bottom:1.5rem">Add Item</h3>
+            <form id="commitment-form">
+                <input type="hidden" id="entry-id">
+                <input type="hidden" id="entry-folder-id">
+                <!-- Since we flattened, we track the target ledger secretly -->
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="entry-name" list="recent-descriptions-list" required
+                        placeholder="e.g. Electricity Bill" autocomplete="off">
+                    <datalist id="recent-descriptions-list">
+                        <!-- Populated by JS -->
+                    </datalist>
+                </div>
+
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" id="entry-amount" step="0.01" required placeholder="0.00">
+                </div>
+
+                <div class="form-group">
+                    <label>Due Date</label>
+                    <input type="date" id="entry-due" required>
+                </div>
+
+                <div class="form-group edit-only hidden">
+                    <label>Status</label>
+                    <select id="entry-status">
+                        <option value="Pending">Pending</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Archived">Archived</option>
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" id="close-commitment-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Info</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Main Logic -->
+    <script src="script.v2.js"></script>
+</body>
+
+</html>
