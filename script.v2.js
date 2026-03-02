@@ -463,14 +463,16 @@ function renderChecklist() {
                 <td style="text-align: center;">${checkboxHtml}</td>
                 <td>${nameColHtml}</td>
                 <td>
-                    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
-                        <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">${ledgerDisplay}</span>
-                        ${typeBadge}
-                    </div>
+                    <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">${ledgerDisplay}</span>
                 </td>
                 <td>${amountHtml}</td>
                 <td>${displayDate || '-'}</td>
-                <td><span class="status-badge ${statusClass}">${item.status}</span></td>
+                <td>
+                    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
+                        ${typeBadge}
+                        <span class="status-badge ${statusClass}">${item.status}</span>
+                    </div>
+                </td>
                 <td><div class="row-actions">${actionsHtml}</div></td>
             `;
             tbody.appendChild(tr);
@@ -690,7 +692,7 @@ function renderAnalytics(allItems) {
 
 // --- ACTIONS & MODALS ---
 
-shareLedgerBtn.addEventListener('click', () => {
+shareLedgerBtn.addEventListener('click', async () => {
     shareLedgerForm.reset();
 
     // Default the month picker to the current month to be helpful
@@ -699,6 +701,32 @@ shareLedgerBtn.addEventListener('click', () => {
     shareMonthInput.value = currentMonthVal;
 
     shareLedgerModal.classList.remove('hidden');
+
+    const listContainer = document.getElementById('shared-ledgers-list');
+    if (listContainer) {
+        listContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">Loading shared ledgers...</p>';
+        const res = await apiRequest('getFolders', { parentId: null });
+        if (res.status === 'success') {
+            const mySharedFolders = res.data.filter(f => f.isOwner && f.sharedWith && f.sharedWith.length > 0);
+            if (mySharedFolders.length === 0) {
+                listContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">You have not shared any ledgers yet.</p>';
+            } else {
+                let html = '<ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">';
+                mySharedFolders.forEach(f => {
+                    const monthName = f.name.replace('Ledger: ', '');
+                    html += `
+                    <li style="font-size: 0.8rem; background: var(--card-bg); padding: 0.75rem; border-radius: 4px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px;">
+                        <strong style="color: var(--primary-main);">${monthName}</strong>
+                        <span style="color: var(--text-muted); font-size: 0.75rem;">Shared across: ${f.sharedWith.join(', ')}</span>
+                    </li>`;
+                });
+                html += '</ul>';
+                listContainer.innerHTML = html;
+            }
+        } else {
+            listContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--danger);">Failed to load data.</p>';
+        }
+    }
 });
 closeShareModalBtn.addEventListener('click', () => {
     shareLedgerModal.classList.add('hidden');
