@@ -179,48 +179,17 @@ async function initApp() {
 }
 
 async function fetchData() {
-    // Check for cached data first
-    const cachedData = localStorage.getItem('cachedChecklistData');
-
-    if (cachedData) {
-        try {
-            allCommitments = JSON.parse(cachedData);
-            updateRecentDescriptions();
-            renderChecklist();
-            // Do NOT hide loading here if we plan to show a quiet background update, 
-            // actually we just make sure loading is hidden since we have data.
-            hideLoading();
-        } catch (e) {
-            console.error("Error parsing cache", e);
-            showLoading(); // Fallback to full load
-        }
-    } else {
-        // No cache, must show loading screen
-        showLoading();
-    }
-
-    // Fetch fresh data in the background
+    showLoading();
     const res = await apiRequest('getChecklist', {});
+    hideLoading();
 
     if (res.status === 'success') {
-        const newDataString = JSON.stringify(res.data);
-        const oldDataString = localStorage.getItem('cachedChecklistData');
-
-        // Only re-render if data actually changed to prevent UI flashing
-        if (newDataString !== oldDataString) {
-            localStorage.setItem('cachedChecklistData', newDataString);
-            allCommitments = res.data;
-            updateRecentDescriptions();
-            renderChecklist();
-        }
+        allCommitments = res.data;
+        updateRecentDescriptions();
+        renderChecklist();
     } else {
-        // Only alert if we didn't already have cached data to show them anyway
-        if (!cachedData) {
-            alert('Error loading checklist: ' + res.message);
-        }
+        alert('Error loading checklist: ' + res.message);
     }
-
-    hideLoading(); // Safety catch
 }
 
 // View Toggles
@@ -579,6 +548,11 @@ function renderAnalytics(allItems) {
     // Filter to current active month logic for doughnut chart
     const now = new Date();
     const currentMonthLabel = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    // Calculate global advances mapped by target Name
+    const targetAdvances = {};
 
     allItems.forEach(i => {
         let d = new Date(i.dueDate);
@@ -589,6 +563,17 @@ function renderAnalytics(allItems) {
         if (mLabel === currentMonthLabel || (i.status === 'Pending' && i.status !== 'Archived')) {
             if (i.status === 'Paid') paid += parseFloat(i.amount);
             else if (i.status === 'Pending') pending += parseFloat(i.amount);
+        }
+
+        // Calculation: If it's a Paid Target with a Due Date strictly in the future, it counts as Advance Payment for that Target.
+        if (i.type === 'Target' && i.status === 'Paid') {
+            const itemYear = d.getFullYear();
+            const itemMonth = d.getMonth();
+            if (itemYear > currentYear || (itemYear === currentYear && itemMonth > currentMonth)) {
+                const advanceAmount = parseFloat(i.amount) || 0;
+                if (!targetAdvances[i.name]) targetAdvances[i.name] = 0;
+                targetAdvances[i.name] += advanceAmount;
+            }
         }
     });
 
@@ -602,7 +587,7 @@ function renderAnalytics(allItems) {
         // Group by name to find the absolute latest balance across ALL data (even paid items)
         const targetMap = {};
         allItems.forEach(i => {
-            if (i.type === 'Target' && i.status !== 'Archived') {
+            if (i.type === 'Target' && i.status !== 'Archived' && i.status !== 'Trashed') {
                 const name = i.name.trim();
                 // Take the one with the smallest balance (which implies the most recent payment / state)
                 if (!targetMap[name] || i.balance < targetMap[name].balance) {
@@ -611,7 +596,7 @@ function renderAnalytics(allItems) {
             }
         });
 
-        const uniqueTargets = Object.values(targetMap).filter(i => parseFloat(i.totalAmount) > 0 && parseFloat(i.balance) > 0);
+        const uniqueTargets = Object.values(targetMap).filter(i => parseFloat(i.totalAmount) > 0 && parseFloat(i.balance) >= 0);
 
         if (uniqueTargets.length === 0) {
             noDebtsMsg.classList.remove('hidden');
@@ -624,19 +609,26 @@ function renderAnalytics(allItems) {
                 const tr = document.createElement('tr');
                 const total = parseFloat(item.totalAmount) || 0;
                 const balance = parseFloat(item.balance) || 0;
+                const advanceTotal = targetAdvances[item.name] || 0;
 
                 const totalFormatted = total.toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
                 const balanceFormatted = balance.toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
+                const advanceFormatted = advanceTotal.toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
 
                 let progressPercent = 0;
                 if (total > 0) {
                     progressPercent = Math.max(0, Math.min(100, ((total - balance) / total) * 100));
                 }
 
+                let balanceHtml = `<span class="text-danger">${balanceFormatted}</span>`;
+                if (advanceTotal > 0) {
+                    balanceHtml += `<br><span style="font-size: 0.70rem; color: var(--success); display: block; margin-top: 2px;">Adv: ${advanceFormatted}</span>`;
+                }
+
                 tr.innerHTML = `
                     <td><strong>${item.name}</strong></td>
                     <td>${totalFormatted}</td>
-                    <td><span class="text-danger">${balanceFormatted}</span></td>
+                    <td>${balanceHtml}</td>
                     <td style="width: 25%; min-width: 80px;">
                         <div style="width: 100%; background: var(--surface); border-radius: 4px; height: 6px; overflow: hidden; margin-top: 4px;">
                             <div style="width: ${progressPercent}%; background: var(--success); height: 100%;"></div>
