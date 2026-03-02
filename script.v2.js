@@ -329,15 +329,27 @@ function renderChecklist() {
 
     // Group by Month Year
     const grouped = {};
+    const nowForGroup = new Date();
+    const currentMonthObjForGroup = new Date(nowForGroup.getFullYear(), nowForGroup.getMonth(), 1);
+
     filtered.forEach(item => {
         let dateObj = new Date(item.dueDate);
         if (isNaN(dateObj)) dateObj = new Date();
-        const monthYear = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+        let sortDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+
+        // If it's the Active view, any item with a future date (like a 2039 Target timeline) 
+        // should be clamped to the Current Month so it doesn't spawn future month headers.
+        if (currentViewMode === 'ACTIVE' && sortDate > currentMonthObjForGroup) {
+            sortDate = currentMonthObjForGroup;
+        }
+
+        const monthYear = sortDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
         if (!grouped[monthYear]) {
             grouped[monthYear] = {
                 label: monthYear,
-                sortDate: new Date(dateObj.getFullYear(), dateObj.getMonth(), 1),
+                sortDate: sortDate,
                 items: []
             };
         }
