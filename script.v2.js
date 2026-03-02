@@ -379,6 +379,7 @@ function renderChecklist() {
                 <table style="${tableCSSPrefix}">
                     <thead>
                         <tr>
+                            <th style="width: 40px; text-align: center;">✓</th>
                             <th>Name</th>
                             <th>Ledger</th>
                             <th>Amount</th>
@@ -406,29 +407,30 @@ function renderChecklist() {
             let nameColHtml = `<strong>${item.name}</strong>`;
             let checkboxHtml = '';
 
+            // Format Ledger Text (Replace 'My Ledger' with User Name & append Type)
+            let ledgerDisplay = item.sourceLedger === 'My Ledger' ? currentDisplayName : item.sourceLedger;
+            let typeBadge = item.type === 'Target' ? `<span style="font-size: 0.70rem; padding: 2px 6px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 4px; margin-left: 6px;">Target</span>` : `<span style="font-size: 0.70rem; padding: 2px 6px; background: rgba(148, 163, 184, 0.2); color: #94a3b8; border-radius: 4px; margin-left: 6px;">Monthly</span>`;
+
             if (currentViewMode === 'ACTIVE') {
                 if (item.status === 'Pending') {
-                    if (item.type === 'Target') {
-                        // Target type gets a special Pay button instead of checkbox
-                        actionsHtml += `<button class="btn btn-sm btn-success" style="margin-right: 0.5rem;" onclick="promptTargetPayment('${item.id}', '${item.folderId}', '${item.name}', ${item.amount}, ${item.balance})">Pay</button>`;
-                    } else {
-                        // Normal type gets checkbox
-                        const checkedState = selectedForBatch.find(u => u.id === item.id) ? 'checked' : '';
-                        checkboxHtml = `<input type="checkbox" class="modern-checkbox" onchange="toggleBatchSelection(this, '${item.id}', '${item.folderId}')" ${checkedState}>`;
-                    }
+                    // Checkbox placed on the far left for all types now
+                    const checkedState = selectedForBatch.find(u => u.id === item.id) ? 'checked' : '';
+                    checkboxHtml = `<input type="checkbox" class="modern-checkbox" onchange="toggleBatchSelection(this, '${item.id}', '${item.folderId}')" ${checkedState}>`;
 
                     // Dimmed archive button
                     actionsHtml += `<button class="nav-link" style="opacity: 0.3; cursor: not-allowed;" title="Must be Paid to Archive">📦</button>`;
                 } else if (item.status === 'Paid') {
+                    // Paid items don't get checkboxes
+                    checkboxHtml = `<div style="width: 16px;"></div>`;
                     actionsHtml += `<button class="nav-link" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Archived')" title="Archive to History">📦</button>`;
                 }
 
                 actionsHtml += `
                     <button class="nav-link" onclick="openEditCommitmentModal('${item.id}', '${item.folderId}')" title="Edit">✏️</button>
                     <button class="nav-link text-danger" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Trashed')" title="Send to Trash">🗑️</button>
-                    ${checkboxHtml}
                  `;
             } else if (currentViewMode === 'HISTORY') {
+                checkboxHtml = `<div style="width: 16px;"></div>`; // No checkbox in history
                 // If it is TRASH, offer RESTORE. 
                 if (item.status === 'Trashed') {
                     actionsHtml += `<button class="nav-link btn-outline" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Pending')" title="Restore">Restore</button>`;
@@ -458,8 +460,12 @@ function renderChecklist() {
             }
 
             tr.innerHTML = `
+                <td style="text-align: center;">${checkboxHtml}</td>
                 <td>${nameColHtml}</td>
-                <td><span style="font-size: 0.8rem; color: var(--text-muted)">${item.sourceLedger}</span></td>
+                <td>
+                    <span style="font-size: 0.8rem; color: var(--text-muted)">${ledgerDisplay}</span>
+                    <br>${typeBadge}
+                </td>
                 <td>${amountHtml}</td>
                 <td>${displayDate || '-'}</td>
                 <td><span class="status-badge ${statusClass}">${item.status}</span></td>
