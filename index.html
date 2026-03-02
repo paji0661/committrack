@@ -75,8 +75,10 @@
                 <!-- Unified actions group in header (Compact Links) -->
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
                     <button id="about-btn" class="nav-link">About</button>
-                    <button id="view-archives-btn" class="nav-link">Archives</button>
+                    <button id="view-archives-btn" class="nav-link">History & Trash</button>
                     <button id="view-active-btn" class="nav-link hidden">Back to Active</button>
+                    <button id="view-trash-toggle-btn" class="nav-link hidden" style="color: var(--text-muted);">View
+                        Trash</button>
                     <button id="share-ledger-btn" class="nav-link">Share Ledger</button>
                     <button id="logout-btn" class="nav-link text-danger">Logout</button>
                 </div>
@@ -124,6 +126,23 @@
                             <div id="no-debts-msg" class="hidden"
                                 style="padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
                                 No active debts or targets.
+                            </div>
+                        </div>
+
+                        <!-- NEW: Advance Payments Display -->
+                        <div id="advance-payments-container" class="hidden"
+                            style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
+                            <h4
+                                style="font-size: 0.8rem; color: var(--success); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 3.5 0 0 0 0 7h5a3.5 3.5 3.5 0 0 1 0 7H6" />
+                                </svg>
+                                Advance / Extra Payments
+                            </h4>
+                            <div id="advance-payments-list"
+                                style="font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.25rem;">
+                                <!-- Populated by JS -->
                             </div>
                         </div>
                     </div>
