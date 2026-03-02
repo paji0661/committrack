@@ -335,7 +335,12 @@ function renderChecklist() {
 
         let sortDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
 
-        // Allow all items to sit in their true respective Month Year header groups
+        // If it's the Active view, any item with a future date (like a Target timeline) 
+        // should be clamped to the Current Month so it doesn't spawn future month headers.
+        if (currentViewMode === 'ACTIVE' && sortDate > currentMonthObjForGroup) {
+            sortDate = currentMonthObjForGroup;
+        }
+
         const monthYear = sortDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
         if (!grouped[monthYear]) {
