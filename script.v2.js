@@ -520,6 +520,21 @@ window.toggleTargetFields = function () {
     }
 }
 
+// Auto Calculate Balance for Target types
+window.autoCalculateBalance = function () {
+    if (entryTypeInput.value === 'Target') {
+        const total = parseFloat(entryTotalAmountInput.value) || 0;
+        const monthly = parseFloat(entryAmountInput.value) || 0;
+
+        // Only auto-calculate if total is provided
+        if (total > 0) {
+            const balance = total - monthly;
+            // Prevent negative balance from auto-calc
+            entryBalanceInput.value = balance > 0 ? balance.toFixed(2) : '0.00';
+        }
+    }
+}
+
 // Add / Edit
 showAddCommitmentBtn.addEventListener('click', () => {
     modalTitle.textContent = "Add Item";

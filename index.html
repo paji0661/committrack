@@ -208,21 +208,23 @@
                 <div class="form-group">
                     <label>Commitment Type</label>
                     <select id="entry-type" onchange="toggleTargetFields()">
-                        <option value="Fixed">Fixed Bill (Monthly)</option>
-                        <option value="Target">Target / Debt (Pay down over time)</option>
+                        <option value="Fixed">Standard Bill (e.g. Utility, Subscription)</option>
+                        <option value="Target">Instalment / Debt (e.g. Loan, Ar-rahnu)</option>
                     </select>
                 </div>
 
                 <div id="target-fields-group" class="hidden">
                     <div class="form-group">
                         <label>Total Debt/Target Amount</label>
-                        <input type="number" id="entry-total-amount" step="0.01" placeholder="e.g. 3000.00">
+                        <input type="number" id="entry-total-amount" step="0.01" placeholder="e.g. 3000.00"
+                            oninput="autoCalculateBalance()">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label id="lbl-entry-amount">Monthly Amount</label>
-                    <input type="number" id="entry-amount" step="0.01" required placeholder="0.00">
+                    <input type="number" id="entry-amount" step="0.01" required placeholder="0.00"
+                        oninput="autoCalculateBalance()">
                 </div>
 
                 <div id="target-balance-group" class="hidden">
