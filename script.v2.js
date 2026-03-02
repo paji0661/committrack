@@ -60,6 +60,10 @@ const commitmentForm = document.getElementById('commitment-form');
 const entryIdInput = document.getElementById('entry-id');
 const entryFolderIdInput = document.getElementById('entry-folder-id');
 const entryNameInput = document.getElementById('entry-name');
+const entryTypeInput = document.getElementById('entry-type');
+const targetFieldsGroup = document.getElementById('target-fields-group');
+const targetBalanceGroup = document.getElementById('target-balance-group');
+const lblEntryAmount = document.getElementById('lbl-entry-amount');
 const entryTotalAmountInput = document.getElementById('entry-total-amount');
 const entryAmountInput = document.getElementById('entry-amount');
 const entryBalanceInput = document.getElementById('entry-balance');
@@ -315,8 +319,15 @@ function renderChecklist() {
 
             if (currentViewMode === 'ACTIVE') {
                 if (item.status === 'Pending') {
-                    const checkedState = selectedForBatch.find(u => u.id === item.id) ? 'checked' : '';
-                    checkboxHtml = `<input type="checkbox" class="modern-checkbox" onchange="toggleBatchSelection(this, '${item.id}', '${item.folderId}')" ${checkedState}>`;
+                    if (item.type === 'Target') {
+                        // Target type gets a special Pay button instead of checkbox
+                        actionsHtml += `<button class="btn btn-sm btn-success" style="margin-right: 0.5rem;" onclick="promptTargetPayment('${item.id}', '${item.folderId}', '${item.name}', ${item.amount}, ${item.balance})">Pay</button>`;
+                    } else {
+                        // Normal type gets checkbox
+                        const checkedState = selectedForBatch.find(u => u.id === item.id) ? 'checked' : '';
+                        checkboxHtml = `<input type="checkbox" class="modern-checkbox" onchange="toggleBatchSelection(this, '${item.id}', '${item.folderId}')" ${checkedState}>`;
+                    }
+
                     // Dimmed archive button
                     actionsHtml += `<button class="nav-link" style="opacity: 0.3; cursor: not-allowed;" title="Must be Paid to Archive">📦</button>`;
                 } else if (item.status === 'Paid') {
@@ -335,9 +346,9 @@ function renderChecklist() {
             }
 
             const amountFormatted = parseFloat(item.amount).toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
-            
+
             let amountHtml = `<strong>${amountFormatted}</strong>`;
-            
+
             // Only show Total / Balance if they are greater than 0
             if (item.totalAmount > 0 || item.balance > 0) {
                 const totalFormatted = parseFloat(item.totalAmount).toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
@@ -496,14 +507,29 @@ shareLedgerForm.addEventListener('submit', async (e) => {
 });
 
 
+// Toggling Target Fields in Modal
+window.toggleTargetFields = function () {
+    if (entryTypeInput.value === 'Target') {
+        targetFieldsGroup.classList.remove('hidden');
+        targetBalanceGroup.classList.remove('hidden');
+        lblEntryAmount.textContent = "Monthly Payment Amount";
+    } else {
+        targetFieldsGroup.classList.add('hidden');
+        targetBalanceGroup.classList.add('hidden');
+        lblEntryAmount.textContent = "Monthly Amount";
+    }
+}
+
 // Add / Edit
 showAddCommitmentBtn.addEventListener('click', () => {
     modalTitle.textContent = "Add Item";
     commitmentForm.reset();
     entryIdInput.value = '';
     entryFolderIdInput.value = '';
+    entryTypeInput.value = 'Fixed';
     entryTotalAmountInput.value = '';
     entryBalanceInput.value = '';
+    toggleTargetFields();
     editOnlyGroup.classList.add('hidden');
     commitmentModal.classList.remove('hidden');
 });
@@ -517,6 +543,8 @@ window.openEditCommitmentModal = function (id, fId) {
     entryIdInput.value = item.id;
     entryFolderIdInput.value = item.folderId;
     entryNameInput.value = item.name;
+    entryTypeInput.value = item.type || 'Fixed';
+    toggleTargetFields();
     entryTotalAmountInput.value = (item.totalAmount && item.totalAmount != item.amount) ? item.totalAmount : '';
     entryAmountInput.value = item.amount;
     entryBalanceInput.value = (item.balance && item.balance != item.amount) ? item.balance : '';
@@ -534,9 +562,10 @@ commitmentForm.addEventListener('submit', async (e) => {
 
     const payload = {
         name: entryNameInput.value.trim(),
-        totalAmount: entryTotalAmountInput.value ? entryTotalAmountInput.value : 0,
+        type: entryTypeInput.value,
+        totalAmount: (entryTypeInput.value === 'Target' && entryTotalAmountInput.value) ? entryTotalAmountInput.value : 0,
         amount: entryAmountInput.value,
-        balance: entryBalanceInput.value ? entryBalanceInput.value : 0,
+        balance: (entryTypeInput.value === 'Target' && entryBalanceInput.value) ? entryBalanceInput.value : 0,
         dueDate: entryDueInput.value,
     };
     if (isEdit) {
@@ -573,6 +602,34 @@ window.deleteCommitmentEntry = async function (id, fId) {
     const res = await apiRequest('deleteCommitment', { folderId: fId, id: id });
     if (res.status === 'success') await fetchData();
     else { alert('Error: ' + res.message); hideLoading(); }
+}
+
+window.promptTargetPayment = async function (id, fId, name, defaultAmount, currentBalance) {
+    const amountStr = prompt(`How much are you paying for ${name} this month?\n(Current Balance: RM ${currentBalance.toFixed(2)})`, defaultAmount);
+
+    if (amountStr === null) return; // User cancelled
+
+    const paymentAmount = parseFloat(amountStr);
+    if (isNaN(paymentAmount) || paymentAmount <= 0) {
+        alert("Please enter a valid payment amount greater than 0.");
+        return;
+    }
+
+    if (paymentAmount > currentBalance && currentBalance > 0) {
+        if (!confirm(`Warning: You are paying RM ${paymentAmount.toFixed(2)}, which is more than the current balance of RM ${currentBalance.toFixed(2)}.\n\nContinue?`)) {
+            return;
+        }
+    }
+
+    showLoading();
+    const res = await apiRequest('processTargetPayment', { folderId: fId, id: id, paymentAmount: paymentAmount });
+    if (res.status === 'success') {
+        alert(res.message);
+        await fetchData();
+    } else {
+        alert('Error: ' + res.message);
+        hideLoading();
+    }
 }
 
 function showLoading() { loadingOverlay.classList.remove('hidden'); }

@@ -184,6 +184,18 @@ function doPost(e) {
       }
       return createResponse({ status: 'success', message: `Batch updated ${updatedCount} items.` });
     }
+    else if (finalAction === 'processTargetPayment') {
+      const { folderId, id, paymentAmount } = requestData.payload;
+      if (!folderId || !hasFolderAccess(userEmailStr, folderId)) return createResponse({ status: 'error', message: 'Access denied' });
+      
+      // Find the item, deduct balance, create new item in next month
+      try {
+          const resultMsg = processTargetPayment(userEmailStr, folderId, id, parseFloat(paymentAmount));
+          return createResponse({ status: 'success', message: resultMsg });
+      } catch (err) {
+          return createResponse({ status: 'error', message: err.toString() });
+      }
+    }
     else if (finalAction === 'editCommitment') {
       const folderId = requestData.payload.folderId;
       if (!folderId || !hasFolderAccess(userEmailStr, folderId)) return createResponse({ status: 'error', message: 'Access denied' });
@@ -426,6 +438,7 @@ function getAllMyCommitments(email) {
             let decodedAmount = 0;
             let decodedTotal = 0;
             let decodedBalance = 0;
+            let type = "Fixed";
             
             // Try to decode Base64. If it fails, assume it's legacy plaintext
             try {
@@ -436,14 +449,14 @@ function getAllMyCommitments(email) {
                 if (data[i].length > 6 && data[i][6]) {
                     decodedTotal = parseFloat(Utilities.newBlob(Utilities.base64Decode(data[i][6].toString())).getDataAsString()) || 0;
                 } else {
-                    decodedTotal = decodedAmount; // Fallback for old entries
+                    decodedTotal = 0; // Fallback for old entries
                 }
                 
                 // Parse Balance (Column H, index 7)
                 if (data[i].length > 7 && data[i][7]) {
                     decodedBalance = parseFloat(Utilities.newBlob(Utilities.base64Decode(data[i][7].toString())).getDataAsString()) || 0;
                 } else {
-                    decodedBalance = decodedAmount; // Fallback for old entries
+                    decodedBalance = 0; // Fallback for old entries
                 }
                 
             } catch (e) {
@@ -451,8 +464,16 @@ function getAllMyCommitments(email) {
                 decodedAmount = parseFloat(data[i][3]) || 0;
                 
                 // Legacy plaintext fallback for Total and Balance
-                decodedTotal = (data[i].length > 6 && data[i][6]) ? (parseFloat(data[i][6]) || 0) : decodedAmount;
-                decodedBalance = (data[i].length > 7 && data[i][7]) ? (parseFloat(data[i][7]) || 0) : decodedAmount;
+                decodedTotal = (data[i].length > 6 && data[i][6]) ? (parseFloat(data[i][6]) || 0) : 0;
+                decodedBalance = (data[i].length > 7 && data[i][7]) ? (parseFloat(data[i][7]) || 0) : 0;
+            }
+            
+            // Column I: Type (index 8)
+            if (data[i].length > 8 && data[i][8]) {
+                type = data[i][8].toString();
+            } else {
+                // Infer type for backward compatibility: if it has a balance, it's a Target
+                if (decodedBalance > 0) type = "Target";
             }
 
             commitments.push({
@@ -463,6 +484,7 @@ function getAllMyCommitments(email) {
                 amount: decodedAmount,
                 totalAmount: decodedTotal,
                 balance: decodedBalance,
+                type: type,
                 dueDate: data[i][4] instanceof Date ? data[i][4].toISOString().split('T')[0] : data[i][4].toString(),
                 status: data[i][5].toString()
             });
@@ -488,13 +510,99 @@ function addCommitment(folderId, payload) {
     
     const dueDate = payload.dueDate; 
     const status = payload.status || 'Pending';
+    const type = payload.type || 'Fixed';
     
     // Store obfuscated values in Sheet
-    // Appending to Columns A:H -> ID, FolderID, Name, Amount, Due Date, Status, Total Amount, Balance
-    sheet.appendRow([id, folderId, encodedName, encodedAmount, dueDate, status, encodedTotal, encodedBalance]);
+    // Appending to Columns A:I -> ID, FolderID, Name, Amount, Due Date, Status, Total Amount, Balance, Type
+    sheet.appendRow([id, folderId, encodedName, encodedAmount, dueDate, status, encodedTotal, encodedBalance, type]);
     
     // Return plaintext back to UI state
-    return { id, folderId, name: payload.name, amount: parseFloat(payload.amount) || 0, totalAmount: parseFloat(payload.totalAmount) || 0, balance: parseFloat(payload.balance) || 0, dueDate, status };
+    return { id, folderId, name: payload.name, amount: parseFloat(payload.amount) || 0, totalAmount: parseFloat(payload.totalAmount) || 0, balance: parseFloat(payload.balance) || 0, type, dueDate, status };
+}
+
+function processTargetPayment(userEmailStr, folderId, id, paymentAmount) {
+    const sheet = getDb().getSheetByName('Commitments');
+    const data = sheet.getDataRange().getValues();
+    
+    let targetRow = -1;
+    let decodedName = "";
+    let decodedAmount = 0;
+    let decodedTotal = 0;
+    let decodedBalance = 0;
+    let dueDateStr = "";
+    
+    // 1. Find the target commitment
+    for (let i = 1; i < data.length; i++) {
+        if (data[i][0].toString() === id && data[i][1].toString() === folderId) {
+            targetRow = i + 1;
+            dueDateStr = data[i][4] instanceof Date ? data[i][4].toISOString().split('T')[0] : data[i][4].toString();
+            try {
+                decodedName = Utilities.newBlob(Utilities.base64Decode(data[i][2].toString())).getDataAsString();
+                decodedAmount = parseFloat(Utilities.newBlob(Utilities.base64Decode(data[i][3].toString())).getDataAsString()) || 0;
+                decodedTotal = parseFloat(Utilities.newBlob(Utilities.base64Decode(data[i][6].toString())).getDataAsString()) || 0;
+                decodedBalance = parseFloat(Utilities.newBlob(Utilities.base64Decode(data[i][7].toString())).getDataAsString()) || 0;
+            } catch (e) {
+                decodedName = data[i][2].toString();
+                decodedAmount = parseFloat(data[i][3]) || 0;
+                decodedTotal = parseFloat(data[i][6]) || 0;
+                decodedBalance = parseFloat(data[i][7]) || 0;
+            }
+            break;
+        }
+    }
+    
+    if (targetRow === -1) throw new Error("Commitment not found");
+    
+    // 2. Mark this month as paid (record actual amount paid rather than expected tracking amount if needed, but for simplicity we keep tracking amount and mark paid, or we update the amount to reflect exactly what they paid this month)
+    const encodedPaidAmount = Utilities.base64Encode(Utilities.newBlob(paymentAmount.toString()).getBytes());
+    sheet.getRange(targetRow, 4).setValue(encodedPaidAmount); // Update amount to actual payment
+    sheet.getRange(targetRow, 6).setValue("Paid"); // Status
+    
+    // Calculate new balance
+    const newBalance = decodedBalance - paymentAmount;
+    
+    if (newBalance <= 0) {
+        // Debt is fully paid
+        const encodedNewBalanceZero = Utilities.base64Encode(Utilities.newBlob("0").getBytes());
+        sheet.getRange(targetRow, 8).setValue(encodedNewBalanceZero);
+        return "Payment successful. Debt is fully cleared!";
+    }
+    
+    // 3. Debt not cleared. Create rollover for next month.
+    // Update the paid item to show the new reduced balance for historical accuracy
+    const encodedNewBalance = Utilities.base64Encode(Utilities.newBlob(newBalance.toString()).getBytes());
+    sheet.getRange(targetRow, 8).setValue(encodedNewBalance);
+    
+    // Generate next month's due date
+    const currentDue = new Date(dueDateStr);
+    currentDue.setMonth(currentDue.getMonth() + 1);
+    const nextDueDateStr = currentDue.toISOString().split('T')[0];
+    const nextMonthYear = currentDue.toLocaleString('default', { month: 'long', year: 'numeric' });
+    const expectedLedgerName = `Ledger: ${nextMonthYear}`;
+    
+    // Find or create next month's folder
+    const myFolders = getFoldersForUser(userEmailStr, null).filter(f => f.isOwner);
+    let nextFolderId = null;
+    const existingLedger = myFolders.find(f => f.name === expectedLedgerName);
+    if (existingLedger) {
+        nextFolderId = existingLedger.id;
+    } else {
+        const newF = createFolder(userEmailStr, null, expectedLedgerName);
+        nextFolderId = newF.id;
+    }
+    
+    // Add new commitment into next month
+    addCommitment(nextFolderId, {
+        name: decodedName,
+        amount: decodedAmount, // Keep the original intended monthly payment amount for the new row
+        totalAmount: decodedTotal,
+        balance: newBalance,
+        status: 'Pending',
+        dueDate: nextDueDateStr,
+        type: 'Target'
+    });
+    
+    return `Payment of RM ${paymentAmount.toFixed(2)} recorded. Remaining balance (RM ${newBalance.toFixed(2)}) rolled over to ${nextMonthYear}.`;
 }
 
 function editCommitment(folderId, payload) {
@@ -521,6 +629,9 @@ function editCommitment(folderId, payload) {
             }
             sheet.getRange(i + 1, 7).setValue(encodedTotal);
             sheet.getRange(i + 1, 8).setValue(encodedBalance);
+            if (payload.type) {
+                sheet.getRange(i + 1, 9).setValue(payload.type);
+            }
             return true;
         }
     }

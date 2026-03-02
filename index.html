@@ -199,25 +199,37 @@
                 <div class="form-group">
                     <label>Description</label>
                     <input type="text" id="entry-name" list="recent-descriptions-list" required
-                        placeholder="e.g. Electricity Bill" autocomplete="off">
+                        placeholder="e.g. Electricity Bill, Ar-rahnu" autocomplete="off">
                     <datalist id="recent-descriptions-list">
                         <!-- Populated by JS -->
                     </datalist>
                 </div>
 
                 <div class="form-group">
-                    <label>Total Amount (Optional)</label>
-                    <input type="number" id="entry-total-amount" step="0.01" placeholder="e.g. 1000.00">
+                    <label>Commitment Type</label>
+                    <select id="entry-type" onchange="toggleTargetFields()">
+                        <option value="Fixed">Fixed Bill (Monthly)</option>
+                        <option value="Target">Target / Debt (Pay down over time)</option>
+                    </select>
+                </div>
+
+                <div id="target-fields-group" class="hidden">
+                    <div class="form-group">
+                        <label>Total Debt/Target Amount</label>
+                        <input type="number" id="entry-total-amount" step="0.01" placeholder="e.g. 3000.00">
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Monthly Amount</label>
+                    <label id="lbl-entry-amount">Monthly Amount</label>
                     <input type="number" id="entry-amount" step="0.01" required placeholder="0.00">
                 </div>
 
-                <div class="form-group">
-                    <label>Balance (Optional)</label>
-                    <input type="number" id="entry-balance" step="0.01" placeholder="e.g. 300.00">
+                <div id="target-balance-group" class="hidden">
+                    <div class="form-group">
+                        <label>Current Balance</label>
+                        <input type="number" id="entry-balance" step="0.01" placeholder="e.g. 3000.00">
+                    </div>
                 </div>
 
                 <div class="form-group">
