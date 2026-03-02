@@ -309,8 +309,23 @@ h4 {
 
 @media (min-width: 768px) {
     .dashboard-grid {
-        grid-template-columns: 3fr 2fr;
+        grid-template-columns: 1fr 2fr;
     }
+}
+
+/* Custom scrollbar for active debts */
+#active-debts-card .table-responsive::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+#active-debts-card .table-responsive::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#active-debts-card .table-responsive::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
 }
 
 .card {

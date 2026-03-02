@@ -433,6 +433,65 @@ function renderAnalytics(activeItems) {
         else pending += parseFloat(i.amount);
     });
 
+    // --- Render Active Debts ---
+    const debtsTbody = document.getElementById('active-debts-tbody');
+    const noDebtsMsg = document.getElementById('no-debts-msg');
+
+    if (debtsTbody && noDebtsMsg) {
+        debtsTbody.innerHTML = '';
+
+        // Group by name to find the latest balance for active targets
+        const targetMap = {};
+        activeItems.forEach(i => {
+            if (i.type === 'Target') {
+                const name = i.name.trim();
+                // Take the one with the smallest balance (assuming it's the most recent state)
+                if (!targetMap[name] || i.balance < targetMap[name].balance) {
+                    targetMap[name] = i;
+                }
+            }
+        });
+
+        const uniqueTargets = Object.values(targetMap).filter(i => parseFloat(i.totalAmount) > 0 && parseFloat(i.balance) > 0);
+
+        if (uniqueTargets.length === 0) {
+            noDebtsMsg.classList.remove('hidden');
+            debtsTbody.parentElement.classList.add('hidden');
+        } else {
+            noDebtsMsg.classList.add('hidden');
+            debtsTbody.parentElement.classList.remove('hidden');
+
+            uniqueTargets.forEach(item => {
+                const tr = document.createElement('tr');
+                const total = parseFloat(item.totalAmount) || 0;
+                const balance = parseFloat(item.balance) || 0;
+
+                const totalFormatted = total.toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
+                const balanceFormatted = balance.toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
+
+                let progressPercent = 0;
+                if (total > 0) {
+                    progressPercent = Math.max(0, Math.min(100, ((total - balance) / total) * 100));
+                }
+
+                tr.innerHTML = `
+                    <td><strong>${item.name}</strong></td>
+                    <td>${totalFormatted}</td>
+                    <td><span class="text-danger">${balanceFormatted}</span></td>
+                    <td style="width: 25%; min-width: 80px;">
+                        <div style="width: 100%; background: var(--surface); border-radius: 4px; height: 6px; overflow: hidden; margin-top: 4px;">
+                            <div style="width: ${progressPercent}%; background: var(--success); height: 100%;"></div>
+                        </div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); text-align: right; margin-top: 3px;">
+                            ${progressPercent.toFixed(1)}%
+                        </div>
+                    </td>
+                `;
+                debtsTbody.appendChild(tr);
+            });
+        }
+    }
+
     if (!overviewChartInstance) {
         const ctx = document.getElementById('overviewChart').getContext('2d');
         overviewChartInstance = new Chart(ctx, {

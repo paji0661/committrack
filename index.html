@@ -82,9 +82,43 @@
                     <div class="card">
                         <h3
                             style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">
-                            Active Monthly Checklist Spend</h3>
+                            Active Monthly Spend</h3>
                         <div class="chart-container">
                             <canvas id="overviewChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- NEW: Active Debt Monitoring -->
+                    <div class="card" id="active-debts-card">
+                        <h3
+                            style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">
+                            Active Debt / Target Monitoring</h3>
+                        <div class="table-responsive" style="max-height: 180px; overflow-y: auto; border: none;">
+                            <table style="width: 100%; border-collapse: separate; border-spacing: 0;">
+                                <thead>
+                                    <tr>
+                                        <th
+                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
+                                            Name</th>
+                                        <th
+                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
+                                            Total</th>
+                                        <th
+                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
+                                            Balance</th>
+                                        <th
+                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
+                                            Progress</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="active-debts-tbody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                            <div id="no-debts-msg" class="hidden"
+                                style="padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                                No active debts or targets.
+                            </div>
                         </div>
                     </div>
                 </div>
