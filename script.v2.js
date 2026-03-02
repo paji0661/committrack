@@ -125,6 +125,7 @@ async function verifyUserRole(email) {
     } else {
         localStorage.removeItem('familyTrackerUserEmail');
         localStorage.removeItem('familyTrackerDisplayName');
+        localStorage.removeItem('cachedChecklistData'); // Clear cache on invalid role
 
         // BUG FIX: We must KEEP currentUser populated so they can register
         currentUser = email;
@@ -164,6 +165,7 @@ registerForm.addEventListener('submit', async (e) => {
 logoutBtn.addEventListener('click', () => {
     localStorage.removeItem('familyTrackerUserEmail');
     localStorage.removeItem('familyTrackerDisplayName');
+    localStorage.removeItem('cachedChecklistData');
     window.location.reload();
 });
 
@@ -177,17 +179,48 @@ async function initApp() {
 }
 
 async function fetchData() {
-    showLoading();
+    // Check for cached data first
+    const cachedData = localStorage.getItem('cachedChecklistData');
+
+    if (cachedData) {
+        try {
+            allCommitments = JSON.parse(cachedData);
+            updateRecentDescriptions();
+            renderChecklist();
+            // Do NOT hide loading here if we plan to show a quiet background update, 
+            // actually we just make sure loading is hidden since we have data.
+            hideLoading();
+        } catch (e) {
+            console.error("Error parsing cache", e);
+            showLoading(); // Fallback to full load
+        }
+    } else {
+        // No cache, must show loading screen
+        showLoading();
+    }
+
+    // Fetch fresh data in the background
     const res = await apiRequest('getChecklist', {});
-    hideLoading();
 
     if (res.status === 'success') {
-        allCommitments = res.data;
-        updateRecentDescriptions();
-        renderChecklist();
+        const newDataString = JSON.stringify(res.data);
+        const oldDataString = localStorage.getItem('cachedChecklistData');
+
+        // Only re-render if data actually changed to prevent UI flashing
+        if (newDataString !== oldDataString) {
+            localStorage.setItem('cachedChecklistData', newDataString);
+            allCommitments = res.data;
+            updateRecentDescriptions();
+            renderChecklist();
+        }
     } else {
-        alert('Error loading checklist: ' + res.message);
+        // Only alert if we didn't already have cached data to show them anyway
+        if (!cachedData) {
+            alert('Error loading checklist: ' + res.message);
+        }
     }
+
+    hideLoading(); // Safety catch
 }
 
 // Toggles
