@@ -223,7 +223,10 @@ async function fetchData() {
     hideLoading(); // Safety catch
 }
 
-// Toggles
+// View Toggles
+const viewTrashToggleBtn = document.getElementById('view-trash-toggle-btn');
+let isViewingTrash = false;
+
 aboutBtn.addEventListener('click', () => {
     aboutModal.classList.remove('hidden');
 });
@@ -233,20 +236,37 @@ function closeAboutModal() {
 }
 
 viewArchivesBtn.addEventListener('click', () => {
-    currentViewMode = 'ARCHIVED';
+    currentViewMode = 'HISTORY';
+    isViewingTrash = false;
     viewArchivesBtn.classList.add('hidden');
     viewActiveBtn.classList.remove('hidden');
-    checklistTitle.textContent = "Completed Archives";
+    viewTrashToggleBtn.classList.remove('hidden');
+    viewTrashToggleBtn.textContent = 'View Trash';
+    checklistTitle.textContent = "History (Paid & Completed)";
     analyticsSection.classList.add('hidden');
     showAddCommitmentBtn.classList.add('hidden');
     shareLedgerBtn.classList.add('hidden');
     renderChecklist();
 });
 
+viewTrashToggleBtn.addEventListener('click', () => {
+    isViewingTrash = !isViewingTrash;
+    if (isViewingTrash) {
+        viewTrashToggleBtn.textContent = 'View History';
+        checklistTitle.textContent = "Trash / Deleted Items";
+    } else {
+        viewTrashToggleBtn.textContent = 'View Trash';
+        checklistTitle.textContent = "History (Paid & Completed)";
+    }
+    renderChecklist();
+});
+
 viewActiveBtn.addEventListener('click', () => {
     currentViewMode = 'ACTIVE';
+    isViewingTrash = false;
     viewActiveBtn.classList.add('hidden');
     viewArchivesBtn.classList.remove('hidden');
+    viewTrashToggleBtn.classList.add('hidden');
     checklistTitle.textContent = "Active Commitments";
     analyticsSection.classList.remove('hidden');
     showAddCommitmentBtn.classList.remove('hidden');
@@ -259,37 +279,64 @@ viewActiveBtn.addEventListener('click', () => {
 function renderChecklist() {
     commitmentsWrapper.innerHTML = '';
 
-    let filtered = [];
-    if (currentViewMode === 'ACTIVE') {
-        // --- Prevent Future "Pending" Targets if they already exist in current month or are paid
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
 
+    // Create a cutoff Date for 3 months ago (e.g. if it's March, cutoff is December 1st)
+    const threeMonthsAgoDate = new Date(currentYear, currentMonth - 3, 1);
+
+    let filtered = [];
+
+    if (currentViewMode === 'ACTIVE') {
         filtered = allCommitments.filter(c => {
             if (c.status === 'Archived') return false;
+            if (c.status === 'Trashed') return false;
 
-            // For targets, if it's placed in a FUTURE month we hide it for now
-            // But we only want to hide it if we don't *need* to see it yet.
-            if (c.type === 'Target') {
-                let d = new Date(c.dueDate);
-                if (isNaN(d)) d = new Date();
+            let d = new Date(c.dueDate);
+            if (isNaN(d)) d = new Date();
 
-                // If the target is due strictly after the current month/year
-                if (d.getFullYear() > currentYear || (d.getFullYear() === currentYear && d.getMonth() > currentMonth)) {
-                    // Hide future targets to prevent clutter
-                    return false;
+            // Limit ACTIVE view to entries that fall strictly AFTER "threeMonthsAgoDate", UNLESS they are Pending
+            // A Pending item should always be visible so the user spots it, regardless of age.
+            if (c.status === 'Paid') {
+                const itemDateObj = new Date(d.getFullYear(), d.getMonth(), 1);
+                if (itemDateObj < threeMonthsAgoDate) {
+                    return false; // Very old paid items disappear from active, user must seek History
                 }
             }
+
+            // Remove the future hiding logic for Targets because it was causing active targets
+            // to disappear completely if placed in future months.
             return true;
         });
 
         // Compute Advance Payments
         computeAdvancePayments(allCommitments); // Pass the whole list so we can see all historical payments
 
-        renderAnalytics(allCommitments); // We pass ALL items to analytics so Active Debt scanner can find the absolute latest balance across all months
-    } else {
-        filtered = allCommitments.filter(c => c.status === 'Archived');
+        // Use all non-trashed items for the Active Debts scanner so it finds the true global active balance.
+        const nonTrashed = allCommitments.filter(c => c.status !== 'Trashed');
+        renderAnalytics(nonTrashed);
+
+    } else if (currentViewMode === 'HISTORY') {
+        if (isViewingTrash) {
+            filtered = allCommitments.filter(c => c.status === 'Trashed');
+        } else {
+            // History View shows Archived OR (Paid AND older than 3 months)
+            filtered = allCommitments.filter(c => {
+                if (c.status === 'Trashed') return false;
+                if (c.status === 'Archived') return true;
+
+                if (c.status === 'Paid') {
+                    let d = new Date(c.dueDate);
+                    if (isNaN(d)) d = new Date();
+                    const itemDateObj = new Date(d.getFullYear(), d.getMonth(), 1);
+                    if (itemDateObj < threeMonthsAgoDate) {
+                        return true; // Old paid items
+                    }
+                }
+                return false;
+            });
+        }
     }
 
     if (filtered.length === 0) {
@@ -297,10 +344,13 @@ function renderChecklist() {
         commitmentsEmptyState.classList.remove('hidden');
         if (currentViewMode === 'ACTIVE') {
             emptyStateTitle.textContent = "No Active Items";
-            emptyStateDesc.textContent = "You're all caught up! Click '+ Add Item' to create a new monthly commitment.";
+            emptyStateDesc.textContent = "You're all caught up! Click '+ Add List' to create a new monthly commitment.";
+        } else if (isViewingTrash) {
+            emptyStateTitle.textContent = "Trash is Empty";
+            emptyStateDesc.textContent = "No freshly deleted items.";
         } else {
-            emptyStateTitle.textContent = "No Archives";
-            emptyStateDesc.textContent = "You haven't archived any paid items yet.";
+            emptyStateTitle.textContent = "No History";
+            emptyStateDesc.textContent = "No old completed logs found.";
         }
         return;
     }
@@ -331,6 +381,9 @@ function renderChecklist() {
         return b.sortDate - a.sortDate;
     });
 
+    // Determine compactness
+    const tableCSSPrefix = currentViewMode === 'HISTORY' ? "font-size: 0.85rem;" : "";
+
     sortedGroups.forEach(groupDesc => {
         const monthKey = groupDesc.label;
         const sortedItems = groupDesc.items.sort((a, b) => {
@@ -343,9 +396,9 @@ function renderChecklist() {
         monthSection.style.marginBottom = '2.5rem';
 
         monthSection.innerHTML = `
-            <h3 style="margin-bottom: 1rem; color: var(--primary-light); font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">${monthKey}</h3>
+            <h3 style="margin-bottom: 1rem; color: var(--primary-light); font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; ${tableCSSPrefix}">${monthKey}</h3>
             <div class="table-responsive">
-                <table>
+                <table style="${tableCSSPrefix}">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -369,7 +422,7 @@ function renderChecklist() {
 
             let statusClass = 'status-pending';
             if (item.status === 'Paid') statusClass = 'status-paid';
-            if (item.status === 'Archived') statusClass = 'status-archived'; // Add a subtle gray style if you want
+            if (item.status === 'Archived' || item.status === 'Trashed') statusClass = 'status-archived';
 
             let actionsHtml = '';
             let nameColHtml = `<strong>${item.name}</strong>`;
@@ -389,18 +442,24 @@ function renderChecklist() {
                     // Dimmed archive button
                     actionsHtml += `<button class="nav-link" style="opacity: 0.3; cursor: not-allowed;" title="Must be Paid to Archive">📦</button>`;
                 } else if (item.status === 'Paid') {
-                    actionsHtml += `<button class="nav-link" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Archived')" title="Archive">📦</button>`;
+                    actionsHtml += `<button class="nav-link" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Archived')" title="Archive to History">📦</button>`;
                 }
 
                 actionsHtml += `
                     <button class="nav-link" onclick="openEditCommitmentModal('${item.id}', '${item.folderId}')" title="Edit">✏️</button>
-                    <button class="nav-link text-danger" onclick="deleteCommitmentEntry('${item.id}', '${item.folderId}')" title="Delete">🗑️</button>
+                    <button class="nav-link text-danger" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Trashed')" title="Send to Trash">🗑️</button>
                     ${checkboxHtml}
                  `;
-            } else {
-                // Archived View Actions
-                actionsHtml += `<button class="nav-link" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Paid')" title="Unarchive">↩️</button>`;
-                actionsHtml += `<button class="nav-link text-danger" onclick="deleteCommitmentEntry('${item.id}', '${item.folderId}')" title="Delete">🗑️</button>`;
+            } else if (currentViewMode === 'HISTORY') {
+                // If it is TRASH, offer RESTORE. 
+                if (item.status === 'Trashed') {
+                    actionsHtml += `<button class="nav-link btn-outline" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Pending')" title="Restore">Restore</button>`;
+                    actionsHtml += `<button class="nav-link text-danger" onclick="deleteCommitmentEntry('${item.id}', '${item.folderId}')" title="Delete Permanently">❌</button>`;
+                } else {
+                    // It is just normal History / Archived
+                    actionsHtml += `<button class="nav-link" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Paid')" title="Unarchive Back to Active">↩️</button>`;
+                    actionsHtml += `<button class="nav-link text-danger" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Trashed')" title="Send to Trash">🗑️</button>`;
+                }
             }
 
             const amountFormatted = parseFloat(item.amount).toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
