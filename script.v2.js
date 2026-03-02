@@ -279,9 +279,6 @@ function renderChecklist() {
             return true;
         });
 
-        // Compute Advance Payments
-        computeAdvancePayments(allCommitments); // Pass the whole list so we can see all historical payments
-
         // Use all non-trashed items for the Active Debts scanner so it finds the true global active balance.
         const nonTrashed = allCommitments.filter(c => c.status !== 'Trashed');
         renderAnalytics(nonTrashed);
