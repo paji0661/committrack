@@ -335,12 +335,7 @@ function renderChecklist() {
 
         let sortDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
 
-        // If it's the Active view, any item with a future date (like a 2039 Target timeline) 
-        // should be clamped to the Current Month so it doesn't spawn future month headers.
-        if (currentViewMode === 'ACTIVE' && sortDate > currentMonthObjForGroup) {
-            sortDate = currentMonthObjForGroup;
-        }
-
+        // Allow all items to sit in their true respective Month Year header groups
         const monthYear = sortDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
         if (!grouped[monthYear]) {
@@ -703,10 +698,26 @@ shareLedgerBtn.addEventListener('click', async () => {
     if (sharedContainer) sharedContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">Loading shared items...</p>';
 
     // We already have `allCommitments` fetched from the last loadData() call. No need to refetch unless strictly required,
-    // but we should ensure we only show items owned by the current user.
     // For simplicity, we just use the global `allCommitments` array.
 
-    const myItems = allCommitments.filter(c => c.sourceLedger === 'My Ledger' && c.status !== 'Trashed' && c.status !== 'Archived');
+    const now = new Date();
+    const threeMonthsAgoDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+
+    const myItems = allCommitments.filter(c => {
+        if (c.sourceLedger !== 'My Ledger') return false;
+        if (c.status === 'Trashed' || c.status === 'Archived') return false;
+
+        // Apply the same 3-month strict "Active" rule as the main dashboard
+        if (c.status === 'Paid') {
+            let d = new Date(c.dueDate);
+            if (isNaN(d)) d = new Date();
+            const itemDateObj = new Date(d.getFullYear(), d.getMonth(), 1);
+            if (itemDateObj < threeMonthsAgoDate) {
+                return false;
+            }
+        }
+        return true;
+    });
 
     // 1. Build Unique Items List for Checkboxes
     const uniqueNames = new Set();
@@ -716,27 +727,85 @@ shareLedgerBtn.addEventListener('click', async () => {
         if (uniqueNames.size === 0) {
             itemsContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">No active commitments to share.</p>';
         } else {
-            let html = '';
+            let html = `
+            <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border); color: var(--text-muted);">
+                        <th style="padding: 0.5rem; width: 40px;">Share</th>
+                        <th style="padding: 0.5rem;">Ledger (Name)</th>
+                        <th style="padding: 0.5rem;">Amount</th>
+                        <th style="padding: 0.5rem;">Due Date</th>
+                        <th style="padding: 0.5rem;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
             uniqueNames.forEach(name => {
+                // Find the *latest* item for this name to show representative data (Amount, Status, Type)
+                const repItem = myItems.reverse().find(i => i.name === name) || myItems.find(i => i.name === name);
+
+                let statusBadge = '';
+                if (repItem.status === 'Paid') statusBadge = `<span class="badge badge-success">Paid</span>`;
+                else if (repItem.status === 'Pending') statusBadge = `<span class="badge badge-warning">Pending</span>`;
+                else statusBadge = `<span class="badge badge-secondary">${repItem.status}</span>`;
+
+                const typeBadge = repItem.type === 'Target'
+                    ? `<span class="badge badge-primary" style="font-size: 0.65rem; margin-top: 4px;">Loan / Investment</span>`
+                    : `<span class="badge badge-accent" style="font-size: 0.65rem; margin-top: 4px;">Bill / Utilities</span>`;
+
+                const formattedAmt = typeof repItem.amount === 'number' ? repItem.amount.toFixed(2) : repItem.amount;
+
+                // Keep the value tracking purely the 'name' so backend sharing works correctly across months
                 html += `
-                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer;">
-                    <input type="checkbox" name="share-item-check" value="${name}">
-                    ${name}
-                </label>`;
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 0.5rem; text-align: center;">
+                        <input type="checkbox" name="share-item-check" value="${name}" style="cursor: pointer; width: 16px; height: 16px;">
+                    </td>
+                    <td style="padding: 0.5rem;">
+                        <strong style="color: var(--text-main); display: block;">${name}</strong>
+                    </td>
+                    <td style="padding: 0.5rem; color: var(--text-main);">RM ${formattedAmt}</td>
+                    <td style="padding: 0.5rem; color: var(--text-muted);">${repItem.dueDate}</td>
+                    <td style="padding: 0.5rem; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                        ${typeBadge}
+                        ${statusBadge}
+                    </td>
+                </tr>`;
             });
+
+            html += `</tbody></table>`;
             itemsContainer.innerHTML = html;
         }
     }
 
     // 2. Build Manage Shared Items List
     if (sharedContainer) {
-        // Collect items that have been shared (sharedWith array > 0)
+        // Prepare to fetch legacy folder shares to ensure old users don't disappear from the UI
+        const fRes = await apiRequest('getFolders', { parentId: null });
+        const legacyFolderShares = {};
+        if (fRes.status === 'success') {
+            const myFolders = fRes.data.filter(f => f.isOwner && f.sharedWith && f.sharedWith.length > 0);
+            myFolders.forEach(f => {
+                legacyFolderShares[f.id] = f.sharedWith;
+            });
+        }
+
+        // Collect items that have been shared (sharedWith array > 0 OR have legacy folder shares)
         // Group them by unique name to avoid listing the same Home Loan 12 times
         const sharedMap = {};
         myItems.forEach(item => {
+            let combinedShares = new Set();
             if (item.sharedWith && item.sharedWith.length > 0) {
+                item.sharedWith.forEach(email => combinedShares.add(email));
+            }
+            if (legacyFolderShares[item.folderId]) {
+                legacyFolderShares[item.folderId].forEach(email => combinedShares.add(email));
+            }
+
+            if (combinedShares.size > 0) {
                 if (!sharedMap[item.name]) sharedMap[item.name] = new Set();
-                item.sharedWith.forEach(email => sharedMap[item.name].add(email));
+                combinedShares.forEach(email => sharedMap[item.name].add(email));
             }
         });
 
