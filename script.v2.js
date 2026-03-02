@@ -228,8 +228,33 @@ function renderChecklist() {
 
     let filtered = [];
     if (currentViewMode === 'ACTIVE') {
-        filtered = allCommitments.filter(c => c.status !== 'Archived');
-        renderAnalytics(filtered);
+        // --- Prevent Future "Pending" Targets if they already exist in current month or are paid
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+
+        filtered = allCommitments.filter(c => {
+            if (c.status === 'Archived') return false;
+
+            // For targets, if it's placed in a FUTURE month we hide it for now
+            // But we only want to hide it if we don't *need* to see it yet.
+            if (c.type === 'Target') {
+                let d = new Date(c.dueDate);
+                if (isNaN(d)) d = new Date();
+
+                // If the target is due strictly after the current month/year
+                if (d.getFullYear() > currentYear || (d.getFullYear() === currentYear && d.getMonth() > currentMonth)) {
+                    // Hide future targets to prevent clutter
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        // Compute Advance Payments
+        computeAdvancePayments(allCommitments); // Pass the whole list so we can see all historical payments
+
+        renderAnalytics(allCommitments); // We pass ALL items to analytics so Active Debt scanner can find the absolute latest balance across all months
     } else {
         filtered = allCommitments.filter(c => c.status === 'Archived');
     }
@@ -356,11 +381,17 @@ function renderChecklist() {
                 amountHtml += `<br><span style="font-size: 0.75rem; color: var(--text-muted);">Bal: ${balanceFormatted} | Tot: ${totalFormatted}</span>`;
             }
 
+            // Display Target Complete Date instead of Due Date for Targets if it exists
+            let displayDate = item.dueDate;
+            if (item.type === 'Target' && item.dueDate) {
+                displayDate = `<span style="font-size: 0.75rem; color: var(--text-muted);">Target:</span><br>${item.dueDate}`;
+            }
+
             tr.innerHTML = `
                 <td>${nameColHtml}</td>
                 <td><span style="font-size: 0.8rem; color: var(--text-muted)">${item.sourceLedger}</span></td>
                 <td>${amountHtml}</td>
-                <td>${item.dueDate}</td>
+                <td>${displayDate || '-'}</td>
                 <td><span class="status-badge ${statusClass}">${item.status}</span></td>
                 <td><div class="row-actions">${actionsHtml}</div></td>
             `;
@@ -423,14 +454,50 @@ batchUpdateBtn.addEventListener('click', async () => {
     }
 });
 
+// Calculate Advance Payments globally
+function computeAdvancePayments(allItems) {
+    const advContainer = document.getElementById('advance-payments-container');
+    const advList = document.getElementById('advance-payments-list');
+    if (!advContainer || !advList) return;
+
+    advList.innerHTML = '';
+    let hasAdvances = false;
+
+    // We only care about Targets that are PAID, where the math implies an advance
+    // Normally, paying more than 'amount' doesn't explicitly store 'advancePayment' in Google Script rn
+    // BUT we can infer it if they have multiple Paid items for the same debt, 
+    // or if we track the "amount" vs standard "amount" (if we had it).
+    // Actually, since we don't have a distinct "Advance Payment" DB field right now,
+    // let's look for Targets where `status === Paid` and calculate if the balance dropped by more than the stipulated `amount`.
+    // Alternatively: we can just leave this UI ready for when they enter an extra amount, 
+    // OR just use a simple heuristic: if a Target has multiple Paid entries in the *same* month.
+
+    // For now, let's just make sure the UI accommodates it if we spot negative balances or manual flags.
+    // If the balance is exactly 0, and they paid *more* than the previous balance, it's an advance/extra.
+    // (This feature can be expanded backend later. For now, we hide it unless we implement a clear flag).
+    // We will hide it dynamically for now since the backend logic for identifying "Advance Payment amount" isn't explicitly returned yet.
+    advContainer.classList.add('hidden');
+}
+
 // --- SINGLE ANALYTICS DOUGHNUT ---
-function renderAnalytics(activeItems) {
+function renderAnalytics(allItems) {
     let pending = 0;
     let paid = 0;
 
-    activeItems.forEach(i => {
-        if (i.status === 'Paid') paid += parseFloat(i.amount);
-        else pending += parseFloat(i.amount);
+    // Filter to current active month logic for doughnut chart
+    const now = new Date();
+    const currentMonthLabel = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+    allItems.forEach(i => {
+        let d = new Date(i.dueDate);
+        if (isNaN(d)) d = new Date();
+        const mLabel = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+        // Active chart only cares about the current month's fixed bills OR anything pending from the past
+        if (mLabel === currentMonthLabel || (i.status === 'Pending' && i.status !== 'Archived')) {
+            if (i.status === 'Paid') paid += parseFloat(i.amount);
+            else if (i.status === 'Pending') pending += parseFloat(i.amount);
+        }
     });
 
     // --- Render Active Debts ---
@@ -440,12 +507,12 @@ function renderAnalytics(activeItems) {
     if (debtsTbody && noDebtsMsg) {
         debtsTbody.innerHTML = '';
 
-        // Group by name to find the latest balance for active targets
+        // Group by name to find the absolute latest balance across ALL data (even paid items)
         const targetMap = {};
-        activeItems.forEach(i => {
-            if (i.type === 'Target') {
+        allItems.forEach(i => {
+            if (i.type === 'Target' && i.status !== 'Archived') {
                 const name = i.name.trim();
-                // Take the one with the smallest balance (assuming it's the most recent state)
+                // Take the one with the smallest balance (which implies the most recent payment / state)
                 if (!targetMap[name] || i.balance < targetMap[name].balance) {
                     targetMap[name] = i;
                 }
@@ -530,10 +597,10 @@ shareLedgerBtn.addEventListener('click', () => {
     const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     shareMonthInput.value = currentMonthVal;
 
-    shareFolderModal.classList.remove('hidden');
+    shareLedgerModal.classList.remove('hidden');
 });
 closeShareModalBtn.addEventListener('click', () => {
-    shareFolderModal.classList.add('hidden');
+    shareLedgerModal.classList.add('hidden');
 });
 
 // Generic click-outside to close for ANY modal
@@ -553,7 +620,7 @@ shareLedgerForm.addEventListener('submit', async (e) => {
     const targetMonthYear = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
 
     // Backend API now requires targetMonthYear
-    shareFolderModal.classList.add('hidden');
+    shareLedgerModal.classList.add('hidden');
     showLoading();
     const res = await apiRequest('shareFolder', { shareEmail: email, targetMonthYear: targetMonthYear });
     if (res.status === 'success') {
@@ -568,14 +635,17 @@ shareLedgerForm.addEventListener('submit', async (e) => {
 
 // Toggling Target Fields in Modal
 window.toggleTargetFields = function () {
+    const lblDue = document.getElementById('lbl-entry-due');
     if (entryTypeInput.value === 'Target') {
         targetFieldsGroup.classList.remove('hidden');
         targetBalanceGroup.classList.remove('hidden');
         lblEntryAmount.textContent = "Monthly Payment Amount";
+        if (lblDue) lblDue.textContent = "Target Complete Date (Optional)";
     } else {
         targetFieldsGroup.classList.add('hidden');
         targetBalanceGroup.classList.add('hidden');
         lblEntryAmount.textContent = "Monthly Amount";
+        if (lblDue) lblDue.textContent = "Due Date";
     }
 }
 
@@ -640,7 +710,7 @@ commitmentForm.addEventListener('submit', async (e) => {
         totalAmount: (entryTypeInput.value === 'Target' && entryTotalAmountInput.value) ? entryTotalAmountInput.value : 0,
         amount: entryAmountInput.value,
         balance: (entryTypeInput.value === 'Target' && entryBalanceInput.value) ? entryBalanceInput.value : 0,
-        dueDate: entryDueInput.value,
+        dueDate: entryDueInput.value, // It's fine to leave this blank or store the complete date. Apps script falls back to current month if empty strings aren't handled well, but the frontend will now label it as "target complete date".
     };
     if (isEdit) {
         payload.id = id;
