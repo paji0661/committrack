@@ -694,37 +694,98 @@ function renderAnalytics(allItems) {
 
 shareLedgerBtn.addEventListener('click', async () => {
     shareLedgerForm.reset();
-
-    // Default the month picker to the current month to be helpful
-    const now = new Date();
-    const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    shareMonthInput.value = currentMonthVal;
-
     shareLedgerModal.classList.remove('hidden');
 
-    const listContainer = document.getElementById('shared-ledgers-list');
-    if (listContainer) {
-        listContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">Loading shared ledgers...</p>';
-        const res = await apiRequest('getFolders', { parentId: null });
-        if (res.status === 'success') {
-            const mySharedFolders = res.data.filter(f => f.isOwner && f.sharedWith && f.sharedWith.length > 0);
-            if (mySharedFolders.length === 0) {
-                listContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">You have not shared any ledgers yet.</p>';
-            } else {
-                let html = '<ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">';
-                mySharedFolders.forEach(f => {
-                    const monthName = f.name.replace('Ledger: ', '');
-                    html += `
-                    <li style="font-size: 0.8rem; background: var(--card-bg); padding: 0.75rem; border-radius: 4px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px;">
-                        <strong style="color: var(--primary-main);">${monthName}</strong>
-                        <span style="color: var(--text-muted); font-size: 0.75rem;">Shared across: ${f.sharedWith.join(', ')}</span>
-                    </li>`;
-                });
-                html += '</ul>';
-                listContainer.innerHTML = html;
-            }
+    const itemsContainer = document.getElementById('share-items-list');
+    const sharedContainer = document.getElementById('shared-ledgers-list');
+
+    if (itemsContainer) itemsContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">Loading active items...</p>';
+    if (sharedContainer) sharedContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">Loading shared items...</p>';
+
+    // We already have `allCommitments` fetched from the last loadData() call. No need to refetch unless strictly required,
+    // but we should ensure we only show items owned by the current user.
+    // For simplicity, we just use the global `allCommitments` array.
+
+    const myItems = allCommitments.filter(c => c.sourceLedger === 'My Ledger' && c.status !== 'Trashed' && c.status !== 'Archived');
+
+    // 1. Build Unique Items List for Checkboxes
+    const uniqueNames = new Set();
+    myItems.forEach(item => uniqueNames.add(item.name));
+
+    if (itemsContainer) {
+        if (uniqueNames.size === 0) {
+            itemsContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">No active commitments to share.</p>';
         } else {
-            listContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--danger);">Failed to load data.</p>';
+            let html = '';
+            uniqueNames.forEach(name => {
+                html += `
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer;">
+                    <input type="checkbox" name="share-item-check" value="${name}">
+                    ${name}
+                </label>`;
+            });
+            itemsContainer.innerHTML = html;
+        }
+    }
+
+    // 2. Build Manage Shared Items List
+    if (sharedContainer) {
+        // Collect items that have been shared (sharedWith array > 0)
+        // Group them by unique name to avoid listing the same Home Loan 12 times
+        const sharedMap = {};
+        myItems.forEach(item => {
+            if (item.sharedWith && item.sharedWith.length > 0) {
+                if (!sharedMap[item.name]) sharedMap[item.name] = new Set();
+                item.sharedWith.forEach(email => sharedMap[item.name].add(email));
+            }
+        });
+
+        const sharedNames = Object.keys(sharedMap);
+        if (sharedNames.length === 0) {
+            sharedContainer.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted);">You have not shared any items yet.</p>';
+        } else {
+            let html = '<ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">';
+            sharedNames.forEach(name => {
+                const emails = Array.from(sharedMap[name]);
+                html += `
+                 <li style="font-size: 0.8rem; background: var(--card-bg); padding: 0.75rem; border-radius: 4px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;">
+                     <strong style="color: var(--primary-main);">${name}</strong>
+                     <div style="display: flex; flex-direction: column; gap: 4px;">`;
+
+                emails.forEach(email => {
+                    html += `
+                     <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.1); padding: 4px 8px; border-radius: 4px;">
+                         <span style="color: var(--text-muted); font-size: 0.75rem;">${email}</span>
+                         <button type="button" class="btn btn-outline revoke-share-btn" data-item="${name}" data-email="${email}" style="padding: 2px 6px; font-size: 0.7rem; border-color: var(--danger); color: var(--danger);">Revoke</button>
+                     </div>`;
+                });
+
+                html += `</div></li>`;
+            });
+            html += '</ul>';
+            sharedContainer.innerHTML = html;
+
+            // Attach Revoke Listeners
+            const revokeBtns = sharedContainer.querySelectorAll('.revoke-share-btn');
+            revokeBtns.forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const targetName = e.target.getAttribute('data-item');
+                    const targetEmail = e.target.getAttribute('data-email');
+                    if (confirm(`Revoke access to ${targetName} for ${targetEmail}?`)) {
+                        btn.textContent = "Revoking...";
+                        btn.disabled = true;
+                        const res = await apiRequest('unshareItem', { itemName: targetName, targetEmail: targetEmail });
+                        if (res.status === 'success') {
+                            // Rather than doing a heavy reload immediately, just hide the UI row and alert
+                            e.target.parentElement.style.display = 'none';
+                        } else {
+                            alert("Failed to revoke: " + res.message);
+                            btn.textContent = "Revoke";
+                            btn.disabled = false;
+                        }
+                    }
+                });
+            });
         }
     }
 });
@@ -743,17 +804,26 @@ shareLedgerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = shareEmailInput.value.trim();
 
-    // Convert YYYY-MM into "Month YYYY" string to match backend
-    const [yearStr, monthNumStr] = shareMonthInput.value.split('-');
-    const dateObj = new Date(parseInt(yearStr), parseInt(monthNumStr) - 1, 1);
-    const targetMonthYear = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+    // Gather selected checkboxes
+    const checkboxes = document.querySelectorAll('input[name="share-item-check"]:checked');
+    const selectedItemNames = [];
+    checkboxes.forEach(cb => selectedItemNames.push(cb.value));
 
-    // Backend API now requires targetMonthYear
+    if (selectedItemNames.length === 0) {
+        alert("Please select at least one item to share.");
+        return;
+    }
+
     shareLedgerModal.classList.add('hidden');
     showLoading();
-    const res = await apiRequest('shareFolder', { shareEmail: email, targetMonthYear: targetMonthYear });
+
+    // Call the new item-level API
+    const res = await apiRequest('shareItems', { shareEmail: email, itemNames: selectedItemNames });
+
     if (res.status === 'success') {
         alert(res.message);
+        // Refresh data to show UI changes if needed
+        await loadData();
     } else {
         alert('Error: ' + res.message);
     }

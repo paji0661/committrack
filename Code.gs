@@ -72,49 +72,90 @@ function doPost(e) {
       const result = createFolder(userEmailStr, parentId, requestData.payload.name);
       return createResponse({ status: 'success', item: result });
     }
-    else if (finalAction === 'shareFolder') {
-      const { shareEmail, targetMonthYear } = requestData.payload;
+    else if (finalAction === 'shareItems') {
+      const { shareEmail, itemNames } = requestData.payload;
       
-      const sheet = getDb().getSheetByName('Folders');
+      const sheet = getDb().getSheetByName('Commitments');
       const data = sheet.getDataRange().getValues();
       let sharedCount = 0;
+      const targetEmail = shareEmail.trim().toLowerCase();
       
-      const expectedLedgerName = `Ledger: ${targetMonthYear}`;
+      // We identify items by their Name (decoded) and Folder Owner.
+      // Easiest robust approach: just find items matching the names owned by currentUser
+      const allFolders = getAllFolders();
+      const myFolderIds = allFolders.filter(f => f.owner === userEmailStr).map(f => f.id);
       
       for (let i = 1; i < data.length; i++) {
         if (!data[i][0]) continue;
         
-        // Find if user owns a specific ledger for this Month/Year
-        if (data[i][2].toString().toLowerCase() === userEmailStr && data[i][3].toString() === expectedLedgerName) {
-           const currentShared = data[i][4] ? data[i][4].toString() : '';
-           let sharedArray = currentShared.split(',').map(s => s.trim().toLowerCase()).filter(s => s);
-           const targetEmail = shareEmail.trim().toLowerCase();
-           
-           if (!sharedArray.includes(targetEmail) && targetEmail !== userEmailStr) {
-             sharedArray.push(targetEmail);
-             sheet.getRange(i + 1, 5).setValue(sharedArray.join(','));
-             sharedCount++;
-           }
+        const fId = data[i][1].toString();
+        if (myFolderIds.includes(fId)) {
+             let decodedName = "";
+             try {
+                 decodedName = Utilities.newBlob(Utilities.base64Decode(data[i][2].toString())).getDataAsString();
+             } catch(e) {
+                 decodedName = data[i][2].toString();
+             }
+             
+             if (itemNames.includes(decodedName)) {
+                // Column J (index 9) is SharedEmails
+                const currentShared = data[i].length > 9 && data[i][9] ? data[i][9].toString() : '';
+                let sharedArray = currentShared.split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+                
+                if (!sharedArray.includes(targetEmail) && targetEmail !== userEmailStr) {
+                  sharedArray.push(targetEmail);
+                  // Ensure Column J exists if this is the first share
+                  sheet.getRange(i + 1, 10).setValue(sharedArray.join(','));
+                  sharedCount++;
+                }
+             }
         }
       }
+      return createResponse({ status: 'success', message: `Shared ${itemNames.length} commitments successfully.` });
+    }
+    else if (finalAction === 'unshareItem') {
+      const { itemName, targetEmail } = requestData.payload;
       
-      if (sharedCount > 0) {
-        return createResponse({ status: 'success', message: `Shared your ${targetMonthYear} ledger successfully!` });
-      } else {
-        // If we didn't find the folder, they haven't created any items for this month yet.
-        // We'll create the empty virtual ledger for them, and instantly share it so it's ready.
-        const newFolder = createFolder(userEmailStr, null, expectedLedgerName);
+      const sheet = getDb().getSheetByName('Commitments');
+      const data = sheet.getDataRange().getValues();
+      let revokedCount = 0;
+      const emailToRemove = targetEmail.trim().toLowerCase();
+      
+      const allFolders = getAllFolders();
+      // If userEmailStr is the one requesting, they are either the owner revoking someone else, 
+      // or they are the recipient removing themselves.
+      const myFolderIds = allFolders.filter(f => f.owner === userEmailStr).map(f => f.id);
+      
+      for (let i = 1; i < data.length; i++) {
+        if (!data[i][0]) continue;
         
-        // Immediately trigger share on the new row we just appended
-        const updatedData = sheet.getDataRange().getValues();
-        for (let j = 1; j < updatedData.length; j++) {
-            if (updatedData[j][0].toString() === newFolder.id) {
-                 sheet.getRange(j + 1, 5).setValue(shareEmail.trim().toLowerCase());
-                 break;
+        const fId = data[i][1].toString();
+        let decodedName = "";
+        try {
+             decodedName = Utilities.newBlob(Utilities.base64Decode(data[i][2].toString())).getDataAsString();
+        } catch(e) {
+             decodedName = data[i][2].toString();
+        }
+        
+        if (decodedName === itemName) {
+            // Check authorization: Is current user the owner of the ledger? Or is the current user the one being removed?
+            const isOwner = myFolderIds.includes(fId);
+            const isSelfRemove = (emailToRemove === userEmailStr);
+            
+            if (isOwner || isSelfRemove) {
+                const currentShared = data[i].length > 9 && data[i][9] ? data[i][9].toString() : '';
+                let sharedArray = currentShared.split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+                
+                const index = sharedArray.indexOf(emailToRemove);
+                if (index > -1) {
+                  sharedArray.splice(index, 1);
+                  sheet.getRange(i + 1, 10).setValue(sharedArray.join(','));
+                  revokedCount++;
+                }
             }
         }
-        return createResponse({ status: 'success', message: `Prepared and Shared your ${targetMonthYear} ledger successfully!` });
       }
+      return createResponse({ status: 'success', message: `Revoked access successfully.` });
     }
 
     // --- CHECKLIST / COMMITMENT ACTIONS ---
@@ -295,6 +336,12 @@ function hasFolderAccess(email, folderId) {
   const allFolders = getAllFolders();
   let currentId = folderId;
   
+  // First, check direct access to the requested folder
+  const targetFolder = allFolders.find(x => x.id === folderId);
+  if (targetFolder && (targetFolder.owner === email || targetFolder.sharedWith.includes(email))) {
+      return true;
+  }
+  
   // Traverse UP the tree. If ANY parent is shared with user (or owned by user), they have access to all children.
   while (currentId) {
     const f = allFolders.find(x => x.id === currentId);
@@ -419,9 +466,13 @@ function getAllMyCommitments(email) {
   // Need mappings for displaying owner names
   const allFolders = getAllFolders();
   const folderOwnerMap = {};
+  const accessibleOwners = new Set([email]); // Always have access to our own targets
+  
+  // First pass: Find all owners that have shared at least one ledger with us
   accessibleIds.forEach(id => {
     const f = allFolders.find(x => x.id === id);
     if (f) {
+      accessibleOwners.add(f.owner);
       const ownerDetails = getUserDetails(f.owner);
       const label = (f.owner === email) ? 'My Ledger' : (ownerDetails.displayName + "'s Ledger");
       folderOwnerMap[id] = label;
@@ -433,7 +484,29 @@ function getAllMyCommitments(email) {
         if (!data[i][0]) continue; 
         
         const fId = data[i][1].toString();
+        const folderInfo = allFolders.find(x => x.id === fId);
+        
+        // We peek at the commitment Type (Column I, index 8) to know if it's a Target
+        let type = "Fixed";
+        if (data[i].length > 8 && data[i][8]) {
+            type = data[i][8].toString();
+        }
+        
+        let hasAccess = false;
         if (accessibleIds.includes(fId)) {
+            hasAccess = true;
+        } else if (type === 'Target' && folderInfo && accessibleOwners.has(folderInfo.owner)) {
+            // Unconditionally grant access to Targets if we share ANY ledger with their owner
+            hasAccess = true;
+            
+            // Build the folder map label dynamically for this unshared future virtual folder
+            if (!folderOwnerMap[fId]) {
+                const ownerDetails = getUserDetails(folderInfo.owner);
+                folderOwnerMap[fId] = (folderInfo.owner === email) ? 'My Ledger' : (ownerDetails.displayName + "'s Ledger");
+            }
+        }
+        
+        if (hasAccess) {
             let decodedName = "Unknown";
             let decodedAmount = 0;
             let decodedTotal = 0;
@@ -475,6 +548,12 @@ function getAllMyCommitments(email) {
                 // Infer type for backward compatibility: if it has a balance, it's a Target
                 if (decodedBalance > 0) type = "Target";
             }
+            
+            // Column J: SharedEmails (index 9)
+            let sharedWithList = [];
+            if (data[i].length > 9 && data[i][9]) {
+                sharedWithList = data[i][9].toString().split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+            }
 
             commitments.push({
                 id: data[i][0].toString(),
@@ -486,7 +565,9 @@ function getAllMyCommitments(email) {
                 balance: decodedBalance,
                 type: type,
                 dueDate: data[i][4] instanceof Date ? data[i][4].toISOString().split('T')[0] : data[i][4].toString(),
-                status: data[i][5].toString()
+                status: data[i][5].toString(),
+                sharedWith: sharedWithList,
+                ownerEmail: folderInfo ? folderInfo.owner : 'unknown'
             });
         }
     }
@@ -707,7 +788,131 @@ function calculateAnalytics(userEmail) {
     }
   }
   
-  return {
-     byOwner
-  };
 }
+
+// =========================================================================
+// ==================== MONTHLY AUTOMATION TRIGGER =====================
+// =========================================================================
+
+/**
+ * Run this function ONCE from the Apps Script Editor to set up the automated trigger.
+ * It will configure `autoGenerateNextMonth` to run on the 1st day of every month at midnight.
+ */
+function setupMonthlyTrigger() {
+  // Clear any existing triggers first to avoid duplicates
+  const triggers = ScriptApp.getProjectTriggers();
+  for (let i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'autoGenerateNextMonth') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+
+  // Create trigger for 1st of the month at around midnight/1am
+  ScriptApp.newTrigger('autoGenerateNextMonth')
+    .timeBased()
+    .onMonthDay(1)
+    .atHour(1)
+    .create();
+    
+  Logger.log("Trigger setup complete. It will run on the 1st of every month.");
+}
+
+/**
+ * Automates creating new monthly ledgers and cloning 'Fixed' (Monthly) 
+ * commitments and unpaid 'Target' commitments into the new month.
+ */
+function autoGenerateNextMonth() {
+  const db = getDb();
+  const folderSheet = db.getSheetByName('Folders');
+  const commitSheet = db.getSheetByName('Commitments');
+  
+  if (!folderSheet || !commitSheet) return;
+  
+  const folders = getAllFolders();
+  const allUsers = new Set(folders.map(f => f.owner)); // Find all unique users
+  
+  const now = new Date();
+  
+  // Backtrack to "Last Month" to see what they were working on
+  let lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthLabel = `Ledger: ${lastMonthDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
+  
+  // "This Month" (the newly generated month)
+  const currentMonthLabel = `Ledger: ${now.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
+  
+  // For each user
+  allUsers.forEach(email => {
+      const userFolders = folders.filter(f => f.owner === email);
+      
+      // Look for last month's ledger
+      const lastMonthFolder = userFolders.find(f => f.name === lastMonthLabel);
+      if (!lastMonthFolder) return; // User didn't use the app last month, nothing to carry over
+      
+      // Look for this month's ledger, create it if it doesn't exist
+      let thisMonthFolder = userFolders.find(f => f.name === currentMonthLabel);
+      if (!thisMonthFolder) {
+          const newFId = 'FLD-' + Utilities.getUuid().substring(0, 8);
+          // Auto carry over any SharedEmails the user had last month so they don't have to reshare
+          const sharedLastMonth = lastMonthFolder.sharedWith ? lastMonthFolder.sharedWith.join(',') : '';
+          folderSheet.appendRow([newFId, '', email, currentMonthLabel, sharedLastMonth]);
+          thisMonthFolder = { id: newFId };
+      }
+      
+      // Fetch commitments inside last month's folder
+      const allCommData = commitSheet.getDataRange().getValues();
+      for (let i = 1; i < allCommData.length; i++) {
+          if (!allCommData[i][0]) continue;
+          
+          const rowFolderId = allCommData[i][1].toString();
+          if (rowFolderId === lastMonthFolder.id) {
+              
+              const status = allCommData[i][5].toString();
+              // Parse Type (index 8) if exists, else infer
+              let type = "Fixed";
+              if (allCommData[i].length > 8 && allCommData[i][8]) {
+                  type = allCommData[i][8].toString();
+              }
+              
+              // We clone items that are:
+              // 1. Type: Fixed (Bill/utilities)  --> Always clone so they have it again this month
+              // 2. Type: Target (Loan) AND Status: Pending --> They didn't pay it last month, carry it forward
+              
+              let shouldClone = false;
+              if (type === 'Fixed') shouldClone = true;
+              if (type === 'Target' && status === 'Pending') shouldClone = true;
+              
+              if (shouldClone) {
+                  // Clone into New Folder as Pending
+                  const newId = Utilities.getUuid();
+                  
+                  // Clone the exact Base64 strings (Name, Amount, Total, Balance)
+                  const encodedName = allCommData[i][2];
+                  const encodedAmount = allCommData[i][3];
+                  
+                  // For Fixed types, we might not have Total/Balance, but we copy whatever is there
+                  const encodedTotal = (allCommData[i].length > 6 && allCommData[i][6]) ? allCommData[i][6] : Utilities.base64Encode(Utilities.newBlob("0").getBytes());
+                  const encodedBalance = (allCommData[i].length > 7 && allCommData[i][7]) ? allCommData[i][7] : Utilities.base64Encode(Utilities.newBlob("0").getBytes());
+                  
+                  // Update Due Date strictly to the new month for display purposes
+                  let oldDueStr = allCommData[i][4] instanceof Date ? allCommData[i][4].toISOString().split('T')[0] : allCommData[i][4].toString();
+                  let newDueStr = oldDueStr;
+                  if (type === 'Fixed' && oldDueStr && oldDueStr !== 'undefined' && oldDueStr !== 'null') {
+                      try {
+                          let d = new Date(oldDueStr);
+                          d.setMonth(now.getMonth());
+                          d.setFullYear(now.getFullYear());
+                          newDueStr = d.toISOString().split('T')[0];
+                      } catch(e) {}
+                  }
+
+                  // Preserve SharedEmails (Column J, index 9)
+                  const oldSharedEmails = (allCommData[i].length > 9 && allCommData[i][9]) ? allCommData[i][9].toString() : '';
+
+                  const newRowId = Utilities.getUuid();
+                  commitSheet.appendRow([newRowId, thisMonthFolder.id, encodedName, encodedAmount, newDueStr, 'Pending', encodedTotal, encodedBalance, type, oldSharedEmails]);
+              }
+          }
+      }
+  });
+}
+

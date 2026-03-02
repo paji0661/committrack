@@ -186,29 +186,34 @@
 
     <!-- Share Ledger Modal -->
     <div id="share-ledger-modal" class="modal hidden">
-        <div class="modal-content">
-            <h3 style="margin-bottom:1.5rem">Share Monthly Ledger</h3>
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Share Commitments</h2>
+                <button type="button" class="close-btn" id="close-share-modal-btn">&times;</button>
+            </div>
             <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
-                Invite a user to view and edit commitments for a specific month.
+                Select specific commitments to share with family members.
             </p>
             <form id="share-ledger-form">
-                <div class="form-group">
-                    <label>Target Month (e.g. March 2026)</label>
-                    <input type="month" id="share-month-input" required>
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="margin-bottom: 0.5rem; display: block;">Select Items to Share</label>
+                    <div id="share-items-list"
+                        style="max-height: 200px; overflow-y: auto; background: var(--surface); padding: 0.75rem; border-radius: var(--radius); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.5rem;">
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Loading active items...</p>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>User's Google Email</label>
                     <input type="email" id="share-email-input" required placeholder="example@gmail.com">
                 </div>
-                <div class="modal-actions" style="margin-top: 1rem;">
-                    <button type="button" class="btn btn-outline" id="close-share-modal-btn">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Share Month</button>
+                <div class="modal-actions" style="margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Share Selected Items</button>
                 </div>
 
                 <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-                    <h4 style="font-size: 0.9rem; margin-bottom: 0.75rem; color: var(--text-main);">Active Shared
-                        Ledgers</h4>
-                    <div id="shared-ledgers-list" style="max-height: 150px; overflow-y: auto;">
+                    <h4 style="font-size: 0.9rem; margin-bottom: 0.75rem; color: var(--text-main);">Manage Shared Items
+                    </h4>
+                    <div id="shared-ledgers-list" style="max-height: 200px; overflow-y: auto;">
                         <p style="font-size: 0.8rem; color: var(--text-muted);">Loading...</p>
                     </div>
                 </div>
