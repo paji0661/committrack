@@ -409,7 +409,7 @@ function renderChecklist() {
 
             // Format Ledger Text (Replace 'My Ledger' with User Name & append Type)
             let ledgerDisplay = item.sourceLedger === 'My Ledger' ? currentDisplayName : item.sourceLedger;
-            let typeBadge = item.type === 'Target' ? `<span style="font-size: 0.70rem; padding: 2px 6px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 4px; margin-left: 6px;">Target</span>` : `<span style="font-size: 0.70rem; padding: 2px 6px; background: rgba(148, 163, 184, 0.2); color: #94a3b8; border-radius: 4px; margin-left: 6px;">Monthly</span>`;
+            let typeBadge = item.type === 'Target' ? `<span style="font-size: 0.70rem; padding: 2px 6px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 4px; margin-left: 6px;">Loan / Investment</span>` : `<span style="font-size: 0.70rem; padding: 2px 6px; background: rgba(148, 163, 184, 0.2); color: #94a3b8; border-radius: 4px; margin-left: 6px;">Bill / Utilities</span>`;
 
             if (currentViewMode === 'ACTIVE') {
                 if (item.status === 'Pending') {
@@ -460,12 +460,8 @@ function renderChecklist() {
             }
 
             tr.innerHTML = `
-                <td style="text-align: center;">${checkboxHtml}</td>
                 <td>${nameColHtml}</td>
-                <td>
-                    <span style="font-size: 0.8rem; color: var(--text-muted)">${ledgerDisplay}</span>
-                    <br>${typeBadge}
-                </td>
+                <td><span style="font-size: 0.8rem; color: var(--text-muted)">${item.sourceLedger}</span></td>
                 <td>${amountHtml}</td>
                 <td>${displayDate || '-'}</td>
                 <td><span class="status-badge ${statusClass}">${item.status}</span></td>
