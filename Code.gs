@@ -424,14 +424,35 @@ function getAllMyCommitments(email) {
         if (accessibleIds.includes(fId)) {
             let decodedName = "Unknown";
             let decodedAmount = 0;
+            let decodedTotal = 0;
+            let decodedBalance = 0;
             
             // Try to decode Base64. If it fails, assume it's legacy plaintext
             try {
                 decodedName = Utilities.newBlob(Utilities.base64Decode(data[i][2].toString())).getDataAsString();
                 decodedAmount = parseFloat(Utilities.newBlob(Utilities.base64Decode(data[i][3].toString())).getDataAsString()) || 0;
+                
+                // Parse Total Amount (Column G, index 6)
+                if (data[i].length > 6 && data[i][6]) {
+                    decodedTotal = parseFloat(Utilities.newBlob(Utilities.base64Decode(data[i][6].toString())).getDataAsString()) || 0;
+                } else {
+                    decodedTotal = decodedAmount; // Fallback for old entries
+                }
+                
+                // Parse Balance (Column H, index 7)
+                if (data[i].length > 7 && data[i][7]) {
+                    decodedBalance = parseFloat(Utilities.newBlob(Utilities.base64Decode(data[i][7].toString())).getDataAsString()) || 0;
+                } else {
+                    decodedBalance = decodedAmount; // Fallback for old entries
+                }
+                
             } catch (e) {
                 decodedName = data[i][2].toString();
                 decodedAmount = parseFloat(data[i][3]) || 0;
+                
+                // Legacy plaintext fallback for Total and Balance
+                decodedTotal = (data[i].length > 6 && data[i][6]) ? (parseFloat(data[i][6]) || 0) : decodedAmount;
+                decodedBalance = (data[i].length > 7 && data[i][7]) ? (parseFloat(data[i][7]) || 0) : decodedAmount;
             }
 
             commitments.push({
@@ -440,6 +461,8 @@ function getAllMyCommitments(email) {
                 sourceLedger: folderOwnerMap[fId],
                 name: decodedName,
                 amount: decodedAmount,
+                totalAmount: decodedTotal,
+                balance: decodedBalance,
                 dueDate: data[i][4] instanceof Date ? data[i][4].toISOString().split('T')[0] : data[i][4].toString(),
                 status: data[i][5].toString()
             });
@@ -455,18 +478,23 @@ function addCommitment(folderId, payload) {
     // Obfuscate (Encrypt) data into Base64 to hide from sheet casual view
     const nameStr = payload.name.toString();
     const amountStr = (parseFloat(payload.amount) || 0).toString();
+    const totalStr = (parseFloat(payload.totalAmount) || 0).toString();
+    const balanceStr = (parseFloat(payload.balance) || 0).toString();
     
     const encodedName = Utilities.base64Encode(Utilities.newBlob(nameStr).getBytes());
     const encodedAmount = Utilities.base64Encode(Utilities.newBlob(amountStr).getBytes());
+    const encodedTotal = Utilities.base64Encode(Utilities.newBlob(totalStr).getBytes());
+    const encodedBalance = Utilities.base64Encode(Utilities.newBlob(balanceStr).getBytes());
     
     const dueDate = payload.dueDate; 
     const status = payload.status || 'Pending';
     
     // Store obfuscated values in Sheet
-    sheet.appendRow([id, folderId, encodedName, encodedAmount, dueDate, status]);
+    // Appending to Columns A:H -> ID, FolderID, Name, Amount, Due Date, Status, Total Amount, Balance
+    sheet.appendRow([id, folderId, encodedName, encodedAmount, dueDate, status, encodedTotal, encodedBalance]);
     
     // Return plaintext back to UI state
-    return { id, folderId, name: payload.name, amount: parseFloat(payload.amount) || 0, dueDate, status };
+    return { id, folderId, name: payload.name, amount: parseFloat(payload.amount) || 0, totalAmount: parseFloat(payload.totalAmount) || 0, balance: parseFloat(payload.balance) || 0, dueDate, status };
 }
 
 function editCommitment(folderId, payload) {
@@ -477,9 +505,13 @@ function editCommitment(folderId, payload) {
             
             const nameStr = payload.name.toString();
             const amountStr = (parseFloat(payload.amount) || 0).toString();
+            const totalStr = (parseFloat(payload.totalAmount) || 0).toString();
+            const balanceStr = (parseFloat(payload.balance) || 0).toString();
             
             const encodedName = Utilities.base64Encode(Utilities.newBlob(nameStr).getBytes());
             const encodedAmount = Utilities.base64Encode(Utilities.newBlob(amountStr).getBytes());
+            const encodedTotal = Utilities.base64Encode(Utilities.newBlob(totalStr).getBytes());
+            const encodedBalance = Utilities.base64Encode(Utilities.newBlob(balanceStr).getBytes());
 
             sheet.getRange(i + 1, 3).setValue(encodedName);
             sheet.getRange(i + 1, 4).setValue(encodedAmount);
@@ -487,6 +519,8 @@ function editCommitment(folderId, payload) {
             if (payload.status) {
                 sheet.getRange(i + 1, 6).setValue(payload.status);
             }
+            sheet.getRange(i + 1, 7).setValue(encodedTotal);
+            sheet.getRange(i + 1, 8).setValue(encodedBalance);
             return true;
         }
     }

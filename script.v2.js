@@ -60,7 +60,9 @@ const commitmentForm = document.getElementById('commitment-form');
 const entryIdInput = document.getElementById('entry-id');
 const entryFolderIdInput = document.getElementById('entry-folder-id');
 const entryNameInput = document.getElementById('entry-name');
+const entryTotalAmountInput = document.getElementById('entry-total-amount');
 const entryAmountInput = document.getElementById('entry-amount');
+const entryBalanceInput = document.getElementById('entry-balance');
 const entryDueInput = document.getElementById('entry-due');
 const entryStatusInput = document.getElementById('entry-status');
 const editOnlyGroup = document.querySelector('.edit-only');
@@ -333,11 +335,20 @@ function renderChecklist() {
             }
 
             const amountFormatted = parseFloat(item.amount).toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
+            
+            let amountHtml = `<strong>${amountFormatted}</strong>`;
+            
+            // Only show Total / Balance if they are greater than 0
+            if (item.totalAmount > 0 || item.balance > 0) {
+                const totalFormatted = parseFloat(item.totalAmount).toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
+                const balanceFormatted = parseFloat(item.balance).toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
+                amountHtml += `<br><span style="font-size: 0.75rem; color: var(--text-muted);">Bal: ${balanceFormatted} | Tot: ${totalFormatted}</span>`;
+            }
 
             tr.innerHTML = `
                 <td>${nameColHtml}</td>
                 <td><span style="font-size: 0.8rem; color: var(--text-muted)">${item.sourceLedger}</span></td>
-                <td>${amountFormatted}</td>
+                <td>${amountHtml}</td>
                 <td>${item.dueDate}</td>
                 <td><span class="status-badge ${statusClass}">${item.status}</span></td>
                 <td><div class="row-actions">${actionsHtml}</div></td>
@@ -449,9 +460,18 @@ shareLedgerBtn.addEventListener('click', () => {
     const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     shareMonthInput.value = currentMonthVal;
 
-    shareLedgerModal.classList.remove('hidden');
+    shareFolderModal.classList.remove('hidden');
 });
-closeShareModalBtn.addEventListener('click', () => shareLedgerModal.classList.add('hidden'));
+closeShareModalBtn.addEventListener('click', () => {
+    shareFolderModal.classList.add('hidden');
+});
+
+// Generic click-outside to close for ANY modal
+window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+        e.target.classList.add('hidden');
+    }
+});
 
 shareLedgerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -462,10 +482,9 @@ shareLedgerForm.addEventListener('submit', async (e) => {
     const dateObj = new Date(parseInt(yearStr), parseInt(monthNumStr) - 1, 1);
     const targetMonthYear = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
 
-    shareLedgerModal.classList.add('hidden');
-    showLoading();
-
     // Backend API now requires targetMonthYear
+    shareFolderModal.classList.add('hidden');
+    showLoading();
     const res = await apiRequest('shareFolder', { shareEmail: email, targetMonthYear: targetMonthYear });
     if (res.status === 'success') {
         alert(res.message);
@@ -483,6 +502,8 @@ showAddCommitmentBtn.addEventListener('click', () => {
     commitmentForm.reset();
     entryIdInput.value = '';
     entryFolderIdInput.value = '';
+    entryTotalAmountInput.value = '';
+    entryBalanceInput.value = '';
     editOnlyGroup.classList.add('hidden');
     commitmentModal.classList.remove('hidden');
 });
@@ -496,7 +517,9 @@ window.openEditCommitmentModal = function (id, fId) {
     entryIdInput.value = item.id;
     entryFolderIdInput.value = item.folderId;
     entryNameInput.value = item.name;
+    entryTotalAmountInput.value = (item.totalAmount && item.totalAmount != item.amount) ? item.totalAmount : '';
     entryAmountInput.value = item.amount;
+    entryBalanceInput.value = (item.balance && item.balance != item.amount) ? item.balance : '';
     entryDueInput.value = item.dueDate;
     entryStatusInput.value = item.status;
     editOnlyGroup.classList.remove('hidden');
@@ -511,7 +534,9 @@ commitmentForm.addEventListener('submit', async (e) => {
 
     const payload = {
         name: entryNameInput.value.trim(),
+        totalAmount: entryTotalAmountInput.value ? entryTotalAmountInput.value : 0,
         amount: entryAmountInput.value,
+        balance: entryBalanceInput.value ? entryBalanceInput.value : 0,
         dueDate: entryDueInput.value,
     };
     if (isEdit) {
