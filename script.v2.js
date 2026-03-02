@@ -460,8 +460,14 @@ function renderChecklist() {
             }
 
             tr.innerHTML = `
+                <td style="text-align: center;">${checkboxHtml}</td>
                 <td>${nameColHtml}</td>
-                <td><span style="font-size: 0.8rem; color: var(--text-muted)">${item.sourceLedger}</span></td>
+                <td>
+                    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                        <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">${ledgerDisplay}</span>
+                        ${typeBadge}
+                    </div>
+                </td>
                 <td>${amountHtml}</td>
                 <td>${displayDate || '-'}</td>
                 <td><span class="status-badge ${statusClass}">${item.status}</span></td>
