@@ -66,31 +66,31 @@ body {
     height: 100vh;
     z-index: -1;
     overflow: hidden;
-    background-color: var(--bg-base);
+    background: linear-gradient(135deg, #020617 0%, #1e1b4b 50%, #0f172a 100%);
 }
 
 .blob1,
 .blob2 {
     position: absolute;
-    filter: blur(80px);
+    filter: blur(90px);
     border-radius: 50%;
-    opacity: 0.5;
+    opacity: 0.65;
     animation: float 20s infinite alternate ease-in-out;
 }
 
 .blob1 {
     width: 600px;
     height: 600px;
-    background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+    background: #6366f1;
     top: -100px;
-    right: -200px;
+    right: -100px;
 }
 
 .blob2 {
     width: 500px;
     height: 500px;
-    background: radial-gradient(circle, #0ea5e9 0%, transparent 70%);
-    bottom: -150px;
+    background: #0ea5e9;
+    bottom: -100px;
     left: -100px;
     animation-delay: -5s;
 }
@@ -458,17 +458,7 @@ tbody tr:last-child td {
     border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.status-badge {
-    @extend .badge;
-}
 
-.status-pending {
-    @extend .badge-pending;
-}
-
-.status-paid {
-    @extend .badge-paid;
-}
 
 /* Custom Checkbox */
 .custom-checkbox {
@@ -790,8 +780,152 @@ select:focus {
         gap: 1rem;
     }
 
-    th,
+    /* Transform Table to Stacked Cards for Mobile */
+    .table-responsive {
+        overflow-x: hidden;
+        border: none !important;
+    }
+
+    table {
+        display: block;
+        width: 100%;
+    }
+
+    thead {
+        display: none;
+        /* Hide standard headers */
+    }
+
+    tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    tr {
+        display: flex;
+        flex-direction: column;
+        background: rgba(30, 41, 59, 0.4);
+        border: 1px solid var(--border-glass);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        position: relative;
+    }
+
     td {
-        white-space: nowrap;
+        display: flex;
+        border: none;
+        padding: 0.4rem 0;
+        text-align: left !important;
+        white-space: normal;
+        align-items: center;
+    }
+
+    /* Active Commitments Table Stack Layout */
+    tr:has(td:nth-child(6)) {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto auto auto auto;
+        gap: 0;
+        align-items: start;
+    }
+
+    tr:has(td:nth-child(6)) td:nth-child(1) {
+        grid-column: 1;
+        grid-row: 1 / span 4;
+        padding-right: 1rem;
+        padding-top: 0.2rem;
+    }
+
+    tr:has(td:nth-child(6)) td:nth-child(2) {
+        grid-column: 2;
+        grid-row: 1;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0 0 0.5rem 0;
+    }
+
+    .td-name {
+        font-size: 1.1rem;
+        color: var(--primary);
+        /* subtle highlight */
+    }
+
+    tr:has(td:nth-child(6)) td:nth-child(3) {
+        grid-column: 2;
+        grid-row: 2;
+        padding: 0 0 0.5rem 0;
+        font-size: 1.1rem;
+    }
+
+    tr:has(td:nth-child(6)) td:nth-child(4) {
+        grid-column: 2;
+        grid-row: 3;
+        padding: 0 0 0.5rem 0;
+    }
+
+    tr:has(td:nth-child(6)) td:nth-child(4)::before {
+        content: '🗓️ ';
+        font-size: 0.9em;
+        margin-right: 6px;
+        opacity: 0.8;
+    }
+
+    tr:has(td:nth-child(6)) td:nth-child(5) {
+        grid-column: 2;
+        grid-row: 4;
+        padding: 0 0 0.5rem 0;
+    }
+
+    tr:has(td:nth-child(6)) td:nth-child(6) {
+        grid-column: 1 / span 2;
+        grid-row: 5;
+        border-top: 1px solid var(--border-glass);
+        margin-top: 0.5rem;
+        padding-top: 0.75rem;
+        justify-content: center !important;
+    }
+
+    .row-actions {
+        width: 100%;
+        justify-content: center !important;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 0.5rem;
+        border-radius: var(--radius-sm);
+    }
+
+    /* Active Debts/Targets Header Labels */
+    #active-debts-tbody tr {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    #active-debts-tbody td {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    #active-debts-tbody td:nth-child(1)::before {
+        content: 'Debt Name:';
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    #active-debts-tbody td:nth-child(2)::before {
+        content: 'Total:';
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    #active-debts-tbody td:nth-child(3)::before {
+        content: 'Balance:';
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    #active-debts-tbody td:nth-child(4) {
+        flex-direction: column;
+        align-items: flex-end;
     }
 }
