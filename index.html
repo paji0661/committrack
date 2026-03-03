@@ -4,331 +4,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Analytics - Checklist UI</title>
-    <script>
-        window.onerror = function (msg, url, lineNo, columnNo, error) {
-            alert('JS Error: ' + msg + '\nLine: ' + lineNo);
-            return false;
-        };
-    </script>
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Local CSS -->
+    <title>Family Commitments - Prototype</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <!-- Full-screen Loading Overlay -->
-    <div id="loading-overlay" class="hidden">
-        <div class="spinner"></div>
+    <!-- Abstract Background -->
+    <div class="mesh-bg">
+        <div class="blob1"></div>
+        <div class="blob2"></div>
     </div>
 
-    <div class="container">
-        <!-- LOGIN SECTION -->
-        <div id="login-container" class="login-container">
-            <div class="login-card">
-                <h1>Family Analytics</h1>
-                <p style="color: var(--text-muted); margin-bottom: 2rem;">Secure Sign In</p>
+    <!-- App Container -->
+    <main class="app-glass-container">
 
-                <div id="g_id_signin" class="g_id_signin" data-type="standard" data-shape="rectangular"
-                    data-theme="outline" data-text="signin_with" data-size="large" data-logo_alignment="left">
-                </div>
-
-                <div class="hidden" id="register-container" style="margin-top: 1.5rem;">
-                    <p style="color: var(--text-main);">Welcome, <strong id="register-email-display"></strong>!</p>
-                    <p style="font-size: 0.875rem; margin-top:0.5rem; margin-bottom: 1rem;">Your email is not recognized
-                        in the database yet.</p>
-                    <form id="register-form" style="text-align: left;">
-                        <div class="form-group">
-                            <label>Your Display Name</label>
-                            <input type="text" id="register-name-input" required placeholder="e.g. Papa, Mama, Addey">
-                        </div>
-                        <button type="submit" id="register-btn" class="btn btn-primary" style="width: 100%;">Create
-                            Account</button>
-                    </form>
-                </div>
-
-                <p id="login-error" class="error-msg hidden">Access denied.</p>
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="icon">◎</span>
+                <h2>Family Ledger</h2>
             </div>
-            <!-- Google Client ID Configures Auth -->
-            <div id="g_id_onload"
-                data-client_id="187408044110-bhtm3t4v2ib896cbem5goa4h9v5urtjr.apps.googleusercontent.com"
-                data-context="signin" data-ux_mode="popup" data-callback="handleCredentialResponse"
-                data-auto_prompt="false">
-            </div>
-        </div>
 
-        <!-- MAIN APP -->
-        <div id="app-container" class="hidden">
-            <header class="app-header">
-                <div>
-                    <h1 style="display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;">
-                        Family Analytics
-                        <span id="header-email-display"
-                            style="font-size: 1rem; color: var(--text-muted); font-weight: 500;">- Name</span>
-                    </h1>
+            <nav class="side-nav">
+                <a href="#" class="nav-item active">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-item">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                    History
+                </a>
+                <a href="#" class="nav-item">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 8v4l3 3"></path>
+                    </svg>
+                    Trash
+                </a>
+            </nav>
+
+            <div class="user-profile">
+                <div class="avatar">AF</div>
+                <div class="user-info">
+                    <span class="name">Addey</span>
+                    <span class="role">Admin</span>
                 </div>
-                <!-- Unified actions group in header (Compact Links) -->
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-                    <button id="about-btn" class="nav-link">About</button>
-                    <button id="view-archives-btn" class="nav-link">History & Trash</button>
-                    <button id="view-active-btn" class="nav-link hidden">Back to Active</button>
-                    <button id="view-trash-toggle-btn" class="nav-link hidden" style="color: var(--text-muted);">View
-                        Trash</button>
-                    <button id="share-ledger-btn" class="nav-link">Share Ledger</button>
-                    <button id="logout-btn" class="nav-link text-danger">Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <section class="content-area">
+
+            <!-- Header -->
+            <header class="top-bar">
+                <div class="greeting">
+                    <h1>Active Overview</h1>
+                    <p>Good evening! Here is your financial outline for March 2026.</p>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-outline">Share Ledger</button>
+                    <button class="btn btn-primary">+ Add New Item</button>
                 </div>
             </header>
 
-            <!-- Active View: Global Analytics -->
-            <div id="analytics-section">
-                <div class="dashboard-grid" style="margin-bottom: 3rem;">
-                    <div class="card">
-                        <h3
-                            style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">
-                            Active Monthly Spend</h3>
-                        <div class="chart-container">
-                            <canvas id="overviewChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- NEW: Active Debt Monitoring -->
-                    <div class="card" id="active-debts-card">
-                        <h3
-                            style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">
-                            Active Debt / Target Monitoring</h3>
-                        <div class="table-responsive" style="max-height: 180px; overflow-y: auto; border: none;">
-                            <table style="width: 100%; border-collapse: separate; border-spacing: 0;">
-                                <thead>
-                                    <tr>
-                                        <th
-                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
-                                            Name</th>
-                                        <th
-                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
-                                            Total</th>
-                                        <th
-                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
-                                            Balance</th>
-                                        <th
-                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
-                                            Progress</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="active-debts-tbody">
-                                    <!-- Populated by JS -->
-                                </tbody>
-                            </table>
-                            <div id="no-debts-msg" class="hidden"
-                                style="padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
-                                No active debts or targets.
-                            </div>
-                        </div>
-
-                        <!-- NEW: Advance Payments Display -->
-                        <div id="advance-payments-container" class="hidden"
-                            style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
-                            <h4
-                                style="font-size: 0.8rem; color: var(--success); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 3.5 0 0 0 0 7h5a3.5 3.5 3.5 0 0 1 0 7H6" />
-                                </svg>
-                                Advance / Extra Payments
-                            </h4>
-                            <div id="advance-payments-list"
-                                style="font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.25rem;">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
+            <!-- Quick Stats Cards -->
+            <div class="stats-grid">
+                <div class="glass-card stat-card">
+                    <div class="stat-icon pending-icon"></div>
+                    <div class="stat-data">
+                        <span class="label">Total Pending</span>
+                        <h3>RM 2,450.00</h3>
                     </div>
                 </div>
-                <hr style="border: 0; border-top: 1px solid var(--border); margin: 3rem 0;">
-            </div> <!-- End Active View Analytics -->
-
-            <div class="section-header">
-                <h2 id="checklist-title">Active Commitments</h2>
-                <button id="show-add-commitment-btn" class="btn btn-sm btn-primary">+ Add List</button>
-            </div>
-
-            <!-- Dynamic Table container for grouped list -->
-            <div id="commitments-wrapper" style="margin-bottom: 3rem;">
-                <!-- Tables injected here grouped by month by JS -->
-            </div>
-
-            <div id="commitments-empty-state" class="empty-state hidden">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="9" y1="21" x2="9" y2="9"></line>
-                </svg>
-                <h2 id="empty-state-title">No Active Items</h2>
-                <p id="empty-state-desc">You're all caught up! Click '+ Add List' to create a new monthly commitment.
-                </p>
-            </div>
-
-        </div> <!-- End App Container -->
-
-        <!-- Floating FAB for Batch Save -->
-        <div id="batch-action-bar" class="hidden"
-            style="position: fixed; bottom: 2rem; right: 2rem; z-index: 50; background: var(--card-bg); padding: 1rem 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--primary-main); box-shadow: 0 10px 25px rgba(0,240,255,0.2); display: flex; align-items: center; gap: 1rem;">
-            <span id="batch-count-display" style="font-weight: 600; color: var(--text-main);">0 Selected</span>
-            <button id="batch-update-btn" class="btn btn-primary">Update List (Mark Paid)</button>
-        </div>
-
-    </div> <!-- End Container -->
-
-    <!-- Modals -->
-
-    <!-- Share Ledger Modal -->
-    <div id="share-ledger-modal" class="modal hidden">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-                <h2>Share Commitments</h2>
-                <button type="button" class="close-btn" id="close-share-modal-btn">&times;</button>
-            </div>
-            <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
-                Select specific commitments to share with family members.
-            </p>
-            <form id="share-ledger-form">
-                <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label style="margin-bottom: 0.5rem; display: block;">Select Items to Share</label>
-                    <div id="share-items-list"
-                        style="max-height: 200px; overflow-y: auto; background: var(--surface); padding: 0.75rem; border-radius: var(--radius); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.5rem;">
-                        <p style="font-size: 0.8rem; color: var(--text-muted);">Loading active items...</p>
+                <div class="glass-card stat-card">
+                    <div class="stat-icon paid-icon"></div>
+                    <div class="stat-data">
+                        <span class="label">Total Paid</span>
+                        <h3>RM 1,200.00</h3>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>User's Google Email</label>
-                    <input type="email" id="share-email-input" required placeholder="example@gmail.com">
-                </div>
-                <div class="modal-actions" style="margin-top: 1.5rem;">
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Share Selected Items</button>
-                </div>
-
-                <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-                    <h4 style="font-size: 0.9rem; margin-bottom: 0.75rem; color: var(--text-main);">Manage Shared Items
-                    </h4>
-                    <div id="shared-ledgers-list" style="max-height: 200px; overflow-y: auto;">
-                        <p style="font-size: 0.8rem; color: var(--text-muted);">Loading...</p>
+                <!-- Mini Progress Chart -->
+                <div class="glass-card progress-card">
+                    <div class="progress-info">
+                        <span class="label">Completion</span>
+                        <h3 class="percent">34%</h3>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width: 34%;"></div>
                     </div>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- About Modal -->
-    <div id="about-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>About Family Analytics</h2>
-                <button class="close-btn" onclick="closeAboutModal()">&times;</button>
             </div>
-            <div
-                style="color: var(--text-main); font-size: 0.8rem; line-height: 1.5; max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
-                <p style="margin-bottom: 0.75rem;"><strong>Objektif Projek (Family Analytics Web App)</strong><br>
-                    Aplikasi ini dibina sebagai Platform Pengurusan Kewangan (Commitment Tracker) Keluarga yang Pintar,
-                    Cepat, dan Tersusun.</p>
 
-                <p style="margin-bottom: 0.75rem;">Tujuan utama aplikasi ini adalah untuk menyelesaikan masalah terlupa
-                    bayar komitmen bulanan (seperti bil air, elektrik, yuran sekolah, atau hutang).<br>Ia memudahkan
-                    pemantauan kewangan bersama dengan ahli keluarga yang lain.</p>
+            <!-- Ledger List -->
+            <div class="ledger-container">
+                <h3 class="section-title">March 2026 Commitments</h3>
 
-                <p style="margin-bottom: 0.5rem;"><strong>4 Fungsi &amp; Kelebihan Utama:</strong></p>
-
-                <ol
-                    style="margin-left: 1.25rem; margin-bottom: 1rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.75rem;">
-                    <li><strong>Senarai Semak Bulanan (Checklist)</strong><br>Sistem automatik asingkan senarai mengikut
-                        Bulan. Anda hanya perlu "Tick" dan selesaikan bil bulan tersebut sahaja.</li>
-                    <li><strong>Kolaborasi (Ledger Sharing)</strong><br>Share senarai komitmen bulan tertentu terus
-                        kepada email pasangan untuk pantau bil secara Real-Time.</li>
-                    <li><strong>Tindakan Pantas (Batch Update)</strong><br>Tanda pelbagai checkbox serentak dan tekan
-                        butang "Update List" untuk merekod semuanya sebagai "Paid" dengan sepantas kilat.</li>
-                    <li><strong>Penjejakan Arkib &amp; Analitik</strong><br>Bayaran selesai akan di-arkib dengan rapi.
-                        Dashboard juga memaparkan graf ringkas status bajet bulanan.</li>
-                </ol>
-
-                <p style="margin-bottom: 0;"><strong>Secara ringkasnya:</strong> Projek ini menukar pengurusan manual
-                    kertas berselerak kepada Web Moden yang kemas, pantas, dan boleh diakses di mana-mana gadget secara
-                    selamat.</p>
+                <div class="glass-card table-wrapper" id="ledger-list-container">
+                    <!-- Populated by main.js -->
+                </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Add/Edit Commitment Modal -->
-    <div id="commitment-modal" class="modal hidden">
-        <div class="modal-content">
-            <h3 id="modal-title" style="margin-bottom:1.5rem">Add Item</h3>
-            <form id="commitment-form">
-                <input type="hidden" id="entry-id">
-                <input type="hidden" id="entry-folder-id">
-                <!-- Since we flattened, we track the target ledger secretly -->
+        </section>
+    </main>
 
-                <div class="form-group">
-                    <label>Description</label>
-                    <input type="text" id="entry-name" list="recent-descriptions-list" required
-                        placeholder="e.g. Electricity Bill, Ar-rahnu" autocomplete="off">
-                    <datalist id="recent-descriptions-list">
-                        <!-- Populated by JS -->
-                    </datalist>
-                </div>
-
-                <div class="form-group">
-                    <label>Commitment Type</label>
-                    <select id="entry-type" onchange="toggleTargetFields()">
-                        <option value="Fixed">Bill / Utilities</option>
-                        <option value="Target">Loan / Investment</option>
-                    </select>
-                </div>
-
-                <div id="target-fields-group" class="hidden">
-                    <div class="form-group">
-                        <label>Total Debt/Target Amount</label>
-                        <input type="number" id="entry-total-amount" step="0.01" placeholder="e.g. 3000.00"
-                            oninput="autoCalculateBalance()">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-entry-amount">Monthly Amount</label>
-                    <input type="number" id="entry-amount" step="0.01" required placeholder="0.00"
-                        oninput="autoCalculateBalance()">
-                </div>
-
-                <div id="target-balance-group" class="hidden">
-                    <div class="form-group">
-                        <label>Current Balance</label>
-                        <input type="number" id="entry-balance" step="0.01" placeholder="e.g. 3000.00">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-entry-due">Due Date</label>
-                    <input type="date" id="entry-due">
-                </div>
-
-                <div class="form-group edit-only hidden">
-                    <label>Status</label>
-                    <select id="entry-status">
-                        <option value="Pending">Pending</option>
-                        <option value="Paid">Paid</option>
-                        <option value="Archived">Archived</option>
-                    </select>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-outline" id="close-commitment-modal-btn">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Info</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    <!-- Main Logic -->
-    <script src="script.v2.js?v=1.1"></script>
+    <script src="main.js"></script>
 </body>
 
 </html>
