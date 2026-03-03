@@ -173,7 +173,16 @@ logoutBtn.addEventListener('click', () => {
 async function initApp() {
     loginContainer.classList.add('hidden');
     appContainer.classList.remove('hidden');
-    headerEmailDisplay.textContent = '- ' + currentDisplayName;
+
+    const meshBg = document.getElementById('mesh-background');
+    if (meshBg) meshBg.classList.remove('hidden');
+
+    const avatarIcon = document.getElementById('avatar-icon');
+    if (avatarIcon && currentDisplayName) {
+        avatarIcon.textContent = currentDisplayName.charAt(0).toUpperCase();
+    }
+
+    headerEmailDisplay.textContent = currentDisplayName; // Removed the '- ' prefix
 
     await fetchData();
 }
@@ -374,18 +383,17 @@ function renderChecklist() {
         monthSection.style.marginBottom = '2.5rem';
 
         monthSection.innerHTML = `
-            <h3 style="margin-bottom: 1rem; color: var(--primary-light); font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; ${tableCSSPrefix}">${monthKey}</h3>
-            <div class="table-responsive">
+            <h3 class="section-title" style="${tableCSSPrefix}">${monthKey}</h3>
+            <div class="glass-card table-wrapper">
                 <table style="${tableCSSPrefix}">
                     <thead>
                         <tr>
                             <th style="width: 40px; text-align: center;">✓</th>
-                            <th>Name</th>
-                            <th>Ledger</th>
+                            <th>Commitment Name</th>
                             <th>Amount</th>
-                            <th>Due Date</th>
+                            <th>Due Date / Timeline</th>
                             <th>Status</th>
-                            <th>Actions</th>
+                            <th style="text-align: right;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -399,58 +407,57 @@ function renderChecklist() {
         sortedItems.forEach(item => {
             const tr = document.createElement('tr');
 
-            let statusClass = 'status-pending';
-            if (item.status === 'Paid') statusClass = 'status-paid';
-            if (item.status === 'Archived' || item.status === 'Trashed') statusClass = 'status-archived';
+            let statusClass = 'badge-pending';
+            if (item.status === 'Paid') statusClass = 'badge-paid';
+            if (item.status === 'Archived' || item.status === 'Trashed') statusClass = 'badge-pending'; // Greyed out logic can map to pending style or inherit
 
             let actionsHtml = '';
-            let nameColHtml = `<strong>${item.name}</strong>`;
             let checkboxHtml = '';
 
             // Format Ledger Text (Replace 'My Ledger' with User Name & append Type)
             let ledgerDisplay = item.sourceLedger === 'My Ledger' ? currentDisplayName : item.sourceLedger;
-            let typeBadge = item.type === 'Target' ? `<span style="font-size: 0.70rem; padding: 2px 6px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 4px; margin-left: 6px;">Loan / Investment</span>` : `<span style="font-size: 0.70rem; padding: 2px 6px; background: rgba(148, 163, 184, 0.2); color: #94a3b8; border-radius: 4px; margin-left: 6px;">Bill / Utilities</span>`;
+            let typeBadge = item.type === 'Target' ? `<span style="font-size: 0.70rem; padding: 2px 6px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 4px; margin-right: 6px;">Loan</span>` : `<span style="font-size: 0.70rem; padding: 2px 6px; background: rgba(148, 163, 184, 0.2); color: #94a3b8; border-radius: 4px; margin-right: 6px;">Bill</span>`;
 
             if (currentViewMode === 'ACTIVE') {
                 if (item.status === 'Pending') {
                     // Checkbox placed on the far left for all types now
                     const checkedState = selectedForBatch.find(u => u.id === item.id) ? 'checked' : '';
-                    checkboxHtml = `<input type="checkbox" class="modern-checkbox" onchange="toggleBatchSelection(this, '${item.id}', '${item.folderId}')" ${checkedState}>`;
+                    checkboxHtml = `<input type="checkbox" class="custom-checkbox modern-checkbox" onchange="toggleBatchSelection(this, '${item.id}', '${item.folderId}')" ${checkedState}>`;
 
                     // Dimmed archive button
-                    actionsHtml += `<button class="nav-link" style="opacity: 0.3; cursor: not-allowed;" title="Must be Paid to Archive">📦</button>`;
+                    actionsHtml += `<button class="action-btn" style="opacity: 0.3; cursor: not-allowed;" title="Must be Paid to Archive">📦</button>`;
                 } else if (item.status === 'Paid') {
                     // Paid items don't get checkboxes
-                    checkboxHtml = `<div style="width: 16px;"></div>`;
-                    actionsHtml += `<button class="nav-link" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Archived')" title="Archive to History">📦</button>`;
+                    checkboxHtml = `<div style="width: 20px;"></div>`;
+                    actionsHtml += `<button class="action-btn" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Archived')" title="Archive to History">📦</button>`;
                 }
 
                 actionsHtml += `
-                    <button class="nav-link" onclick="openEditCommitmentModal('${item.id}', '${item.folderId}')" title="Edit">✏️</button>
-                    <button class="nav-link text-danger" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Trashed')" title="Send to Trash">🗑️</button>
+                    <button class="action-btn" onclick="openEditCommitmentModal('${item.id}', '${item.folderId}')" title="Edit">✏️</button>
+                    <button class="action-btn text-danger" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Trashed')" title="Send to Trash">🗑️</button>
                  `;
             } else if (currentViewMode === 'HISTORY') {
-                checkboxHtml = `<div style="width: 16px;"></div>`; // No checkbox in history
+                checkboxHtml = `<div style="width: 20px;"></div>`; // No checkbox in history
                 // If it is TRASH, offer RESTORE. 
                 if (item.status === 'Trashed') {
-                    actionsHtml += `<button class="nav-link btn-outline" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Pending')" title="Restore">Restore</button>`;
-                    actionsHtml += `<button class="nav-link text-danger" onclick="deleteCommitmentEntry('${item.id}', '${item.folderId}')" title="Delete Permanently">❌</button>`;
+                    actionsHtml += `<button class="action-btn btn-outline" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Pending')" title="Restore">Restore</button>`;
+                    actionsHtml += `<button class="action-btn text-danger" onclick="deleteCommitmentEntry('${item.id}', '${item.folderId}')" title="Delete Permanently">❌</button>`;
                 } else {
                     // It is just normal History / Archived
-                    actionsHtml += `<button class="nav-link" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Paid')" title="Unarchive Back to Active">↩️</button>`;
-                    actionsHtml += `<button class="nav-link text-danger" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Trashed')" title="Send to Trash">🗑️</button>`;
+                    actionsHtml += `<button class="action-btn" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Paid')" title="Unarchive Back to Active">↩️</button>`;
+                    actionsHtml += `<button class="action-btn text-danger" onclick="markCustomStatus('${item.id}', '${item.folderId}', 'Trashed')" title="Send to Trash">🗑️</button>`;
                 }
             }
 
             const amountFormatted = parseFloat(item.amount).toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
 
-            let amountHtml = `<strong>${amountFormatted}</strong>`;
+            let amountHtml = `${amountFormatted}`;
 
             // Only show Total / Balance if they are greater than 0
             if (item.totalAmount > 0 || item.balance > 0) {
                 const totalFormatted = parseFloat(item.totalAmount).toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
                 const balanceFormatted = parseFloat(item.balance).toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
-                amountHtml += `<br><span style="font-size: 0.75rem; color: var(--text-muted);">Bal: ${balanceFormatted} | Tot: ${totalFormatted}</span>`;
+                amountHtml += `<br><span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">Bal: ${balanceFormatted} | Tot: ${totalFormatted}</span>`;
             }
 
             // Display Target Complete Date instead of Due Date for Targets if it exists
@@ -461,19 +468,23 @@ function renderChecklist() {
 
             tr.innerHTML = `
                 <td style="text-align: center;">${checkboxHtml}</td>
-                <td>${nameColHtml}</td>
                 <td>
-                    <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">${ledgerDisplay}</span>
+                    <span class="td-name">${item.name}</span>
+                    <span class="td-ledger">Ledger: ${ledgerDisplay}</span>
                 </td>
-                <td>${amountHtml}</td>
-                <td>${displayDate || '-'}</td>
+                <td style="font-weight: 500;">
+                    ${amountHtml}
+                </td>
+                <td style="color: var(--text-muted); font-size: 0.85rem;">
+                    ${displayDate || '-'}
+                </td>
                 <td>
-                    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
+                    <div style="display: flex; align-items: center;">
                         ${typeBadge}
-                        <span class="status-badge ${statusClass}">${item.status}</span>
+                        <span class="badge ${statusClass}">${item.status.toUpperCase()}</span>
                     </div>
                 </td>
-                <td><div class="row-actions">${actionsHtml}</div></td>
+                <td style="text-align: right;"><div class="row-actions" style="justify-content: flex-end; gap: 0.5rem;">${actionsHtml}</div></td>
             `;
             tbody.appendChild(tr);
         });
@@ -688,6 +699,24 @@ function renderAnalytics(allItems) {
 
     overviewChartInstance.data.datasets[0].data = [pending, paid];
     overviewChartInstance.update();
+
+    // Update Quick Stats Glass Cards
+    const dashTotalPending = document.getElementById('dash-total-pending');
+    const dashTotalPaid = document.getElementById('dash-total-paid');
+    const dashProgressPercent = document.getElementById('dash-progress-percent');
+    const dashProgressBar = document.getElementById('dash-progress-bar');
+
+    if (dashTotalPending) {
+        dashTotalPending.textContent = pending.toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
+        dashTotalPaid.textContent = paid.toLocaleString('ms-MY', { style: 'currency', currency: 'MYR' });
+
+        const totalAmount = pending + paid;
+        let percent = 0;
+        if (totalAmount > 0) percent = Math.round((paid / totalAmount) * 100);
+
+        dashProgressPercent.textContent = percent + '%';
+        dashProgressBar.style.width = percent + '%';
+    }
 }
 
 // --- ACTIONS & MODALS ---

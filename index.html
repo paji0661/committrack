@@ -27,95 +27,184 @@
         <div class="spinner"></div>
     </div>
 
-    <div class="container">
-        <!-- LOGIN SECTION -->
-        <div id="login-container" class="login-container">
-            <div class="login-card">
-                <h1>Family Analytics</h1>
-                <p style="color: var(--text-muted); margin-bottom: 2rem;">Secure Sign In</p>
+    <!-- Abstract Background (only visible when app is active, handled by css/js or just position absolute) -->
+    <div class="mesh-bg hidden" id="mesh-background">
+        <div class="blob1"></div>
+        <div class="blob2"></div>
+    </div>
 
-                <div id="g_id_signin" class="g_id_signin" data-type="standard" data-shape="rectangular"
-                    data-theme="outline" data-text="signin_with" data-size="large" data-logo_alignment="left">
-                </div>
+    <!-- LOGIN SECTION -->
+    <div id="login-container" class="login-container">
+        <div class="login-card">
+            <h1>Family Ledger</h1>
+            <p style="color: var(--text-muted); margin-bottom: 2rem;">Secure Sign In</p>
 
-                <div class="hidden" id="register-container" style="margin-top: 1.5rem;">
-                    <p style="color: var(--text-main);">Welcome, <strong id="register-email-display"></strong>!</p>
-                    <p style="font-size: 0.875rem; margin-top:0.5rem; margin-bottom: 1rem;">Your email is not recognized
-                        in the database yet.</p>
-                    <form id="register-form" style="text-align: left;">
-                        <div class="form-group">
-                            <label>Your Display Name</label>
-                            <input type="text" id="register-name-input" required placeholder="e.g. Papa, Mama, Addey">
-                        </div>
-                        <button type="submit" id="register-btn" class="btn btn-primary" style="width: 100%;">Create
-                            Account</button>
-                    </form>
-                </div>
-
-                <p id="login-error" class="error-msg hidden">Access denied.</p>
+            <div id="g_id_signin" class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline"
+                data-text="signin_with" data-size="large" data-logo_alignment="left">
             </div>
-            <!-- Google Client ID Configures Auth -->
-            <div id="g_id_onload"
-                data-client_id="187408044110-bhtm3t4v2ib896cbem5goa4h9v5urtjr.apps.googleusercontent.com"
-                data-context="signin" data-ux_mode="popup" data-callback="handleCredentialResponse"
-                data-auto_prompt="false">
+
+            <div class="hidden" id="register-container" style="margin-top: 1.5rem;">
+                <p style="color: var(--text-main);">Welcome, <strong id="register-email-display"></strong>!</p>
+                <p style="font-size: 0.875rem; margin-top:0.5rem; margin-bottom: 1rem;">Your email is not recognized
+                    in the database yet.</p>
+                <form id="register-form" style="text-align: left;">
+                    <div class="form-group">
+                        <label>Your Display Name</label>
+                        <input type="text" id="register-name-input" required placeholder="e.g. Papa, Mama, Addey">
+                    </div>
+                    <button type="submit" id="register-btn" class="btn btn-primary" style="width: 100%;">Create
+                        Account</button>
+                </form>
             </div>
+
+            <p id="login-error" class="error-msg hidden">Access denied.</p>
         </div>
+        <!-- Google Client ID Configures Auth -->
+        <div id="g_id_onload" data-client_id="187408044110-bhtm3t4v2ib896cbem5goa4h9v5urtjr.apps.googleusercontent.com"
+            data-context="signin" data-ux_mode="popup" data-callback="handleCredentialResponse"
+            data-auto_prompt="false">
+        </div>
+    </div>
 
-        <!-- MAIN APP -->
-        <div id="app-container" class="hidden">
-            <header class="app-header">
-                <div>
-                    <h1 style="display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;">
-                        Family Analytics
-                        <span id="header-email-display"
-                            style="font-size: 1rem; color: var(--text-muted); font-weight: 500;">- Name</span>
-                    </h1>
+    <!-- MAIN APP -->
+    <main id="app-container" class="app-glass-container hidden">
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="icon">◎</span>
+                <h2>Family Ledger</h2>
+            </div>
+
+            <nav class="side-nav">
+                <a href="#" id="view-active-btn" class="nav-item active">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="#" id="view-archives-btn" class="nav-item">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                    History
+                </a>
+                <a href="#" id="view-trash-toggle-btn" class="nav-item">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 8v4l3 3"></path>
+                    </svg>
+                    Trash
+                </a>
+            </nav>
+
+            <nav class="side-nav" style="margin-top: auto; flex: 0 0 auto; margin-bottom: 2rem;">
+                <a href="#" id="share-ledger-btn" class="nav-item">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                    Share Items
+                </a>
+                <a href="#" id="about-btn" class="nav-item">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 16v-4"></path>
+                        <path d="M12 8h.01"></path>
+                    </svg>
+                    About App
+                </a>
+            </nav>
+
+            <div class="user-profile">
+                <div class="avatar" id="avatar-icon">U</div>
+                <div class="user-info">
+                    <span class="name" id="header-email-display">Loading...</span>
+                    <a href="#" id="logout-btn" class="role text-danger"
+                        style="text-decoration: none; margin-top: 2px;">Logout</a>
                 </div>
-                <!-- Unified actions group in header (Compact Links) -->
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-                    <button id="about-btn" class="nav-link">About</button>
-                    <button id="view-archives-btn" class="nav-link">History & Trash</button>
-                    <button id="view-active-btn" class="nav-link hidden">Back to Active</button>
-                    <button id="view-trash-toggle-btn" class="nav-link hidden" style="color: var(--text-muted);">View
-                        Trash</button>
-                    <button id="share-ledger-btn" class="nav-link">Share Ledger</button>
-                    <button id="logout-btn" class="nav-link text-danger">Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <section class="content-area">
+
+            <!-- Header -->
+            <header class="top-bar">
+                <div class="greeting">
+                    <h1 id="checklist-title">Active Overview</h1>
+                    <p id="checklist-subtitle">Manage your financial obligations efficiently.</p>
+                </div>
+                <div class="actions">
+                    <button id="batch-update-btn" class="btn btn-outline hidden">Update Selected</button>
+                    <button id="show-add-commitment-btn" class="btn btn-primary">+ Add Item</button>
                 </div>
             </header>
 
             <!-- Active View: Global Analytics -->
             <div id="analytics-section">
-                <div class="dashboard-grid" style="margin-bottom: 3rem;">
-                    <div class="card">
+                <!-- Quick Stats Cards (For future wiring) -->
+                <div class="stats-grid" style="margin-bottom: 1.5rem;">
+                    <div class="glass-card stat-card" style="padding: 1rem;">
+                        <div class="stat-icon pending-icon"></div>
+                        <div class="stat-data">
+                            <span class="label">Total Pending</span>
+                            <h3 id="dash-total-pending">RM 0.00</h3>
+                        </div>
+                    </div>
+                    <div class="glass-card stat-card" style="padding: 1rem;">
+                        <div class="stat-icon paid-icon"></div>
+                        <div class="stat-data">
+                            <span class="label">Total Paid</span>
+                            <h3 id="dash-total-paid">RM 0.00</h3>
+                        </div>
+                    </div>
+                    <div class="glass-card progress-card" style="padding: 1rem;">
+                        <div class="progress-info">
+                            <span class="label">Completion</span>
+                            <h3 class="percent" id="dash-progress-percent">0%</h3>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="dash-progress-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid glass-dashboard" style="margin-bottom: 2rem;">
+                    <div class="glass-card card" style="padding: 1rem;">
                         <h3
-                            style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">
-                            Active Monthly Spend</h3>
-                        <div class="chart-container">
+                            style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">
+                            Spend Chart</h3>
+                        <div class="chart-container" style="height: 160px;">
                             <canvas id="overviewChart"></canvas>
                         </div>
                     </div>
 
-                    <!-- NEW: Active Debt Monitoring -->
-                    <div class="card" id="active-debts-card">
+                    <div class="glass-card card" id="active-debts-card" style="padding: 1rem;">
                         <h3
-                            style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">
-                            Active Debt / Target Monitoring</h3>
-                        <div class="table-responsive" style="max-height: 180px; overflow-y: auto; border: none;">
+                            style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">
+                            Active Debt / Targets</h3>
+                        <div class="table-responsive" style="max-height: 160px; border: none;">
                             <table style="width: 100%; border-collapse: separate; border-spacing: 0;">
                                 <thead>
                                     <tr>
                                         <th
-                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
+                                            style="padding: 0.5rem; background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
                                             Name</th>
                                         <th
-                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
+                                            style="padding: 0.5rem; background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
                                             Total</th>
                                         <th
-                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
+                                            style="padding: 0.5rem; background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
                                             Balance</th>
                                         <th
-                                            style="background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
+                                            style="padding: 0.5rem; background: rgba(30, 41, 59, 1); position: sticky; top: 0; z-index: 10;">
                                             Progress</th>
                                     </tr>
                                 </thead>
@@ -124,63 +213,48 @@
                                 </tbody>
                             </table>
                             <div id="no-debts-msg" class="hidden"
-                                style="padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                                style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
                                 No active debts or targets.
                             </div>
                         </div>
 
-                        <!-- NEW: Advance Payments Display -->
+                        <!-- Advance Payments Display -->
                         <div id="advance-payments-container" class="hidden"
-                            style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
+                            style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-glass);">
                             <h4
                                 style="font-size: 0.8rem; color: var(--success); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 3.5 0 0 0 0 7h5a3.5 3.5 3.5 0 0 1 0 7H6" />
-                                </svg>
                                 Advance / Extra Payments
                             </h4>
                             <div id="advance-payments-list"
                                 style="font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.25rem;">
-                                <!-- Populated by JS -->
                             </div>
                         </div>
                     </div>
                 </div>
-                <hr style="border: 0; border-top: 1px solid var(--border); margin: 3rem 0;">
             </div> <!-- End Active View Analytics -->
 
-            <div class="section-header">
-                <h2 id="checklist-title">Active Commitments</h2>
-                <button id="show-add-commitment-btn" class="btn btn-sm btn-primary">+ Add List</button>
+            <!-- Ledger List -->
+            <div class="ledger-container">
+                <!-- Dynamic Table container for grouped list -->
+                <div id="commitments-wrapper">
+                    <!-- Tables injected here grouped by month by JS -->
+                </div>
+
+                <div id="commitments-empty-state" class="empty-state hidden glass-card mt-3">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        style="margin-bottom: 1rem; color: var(--text-muted);">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                    </svg>
+                    <h2 id="empty-state-title" style="font-size: 1.25rem;">No Active Items</h2>
+                    <p id="empty-state-desc" style="color: var(--text-muted);">You're all caught up! Click '+ Add Item'
+                        to create a new commitment.</p>
+                </div>
             </div>
 
-            <!-- Dynamic Table container for grouped list -->
-            <div id="commitments-wrapper" style="margin-bottom: 3rem;">
-                <!-- Tables injected here grouped by month by JS -->
-            </div>
-
-            <div id="commitments-empty-state" class="empty-state hidden">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="9" y1="21" x2="9" y2="9"></line>
-                </svg>
-                <h2 id="empty-state-title">No Active Items</h2>
-                <p id="empty-state-desc">You're all caught up! Click '+ Add List' to create a new monthly commitment.
-                </p>
-            </div>
-
-        </div> <!-- End App Container -->
-
-        <!-- Floating FAB for Batch Save -->
-        <div id="batch-action-bar" class="hidden"
-            style="position: fixed; bottom: 2rem; right: 2rem; z-index: 50; background: var(--card-bg); padding: 1rem 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--primary-main); box-shadow: 0 10px 25px rgba(0,240,255,0.2); display: flex; align-items: center; gap: 1rem;">
-            <span id="batch-count-display" style="font-weight: 600; color: var(--text-main);">0 Selected</span>
-            <button id="batch-update-btn" class="btn btn-primary">Update List (Mark Paid)</button>
-        </div>
-
-    </div> <!-- End Container -->
+        </section>
+    </main>
 
     <!-- Modals -->
 
