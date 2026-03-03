@@ -520,11 +520,13 @@ window.toggleBatchSelection = function (checkboxEl, id, folderId) {
 }
 
 function updateBatchUI() {
+    if (!batchUpdateBtn) return;
+
     if (selectedForBatch.length > 0) {
-        batchCountDisplay.textContent = `${selectedForBatch.length} Selected`;
-        batchActionBar.classList.remove('hidden');
+        batchUpdateBtn.innerHTML = `Mark Paid (<span style="color: var(--accent);">${selectedForBatch.length}</span>)`;
+        batchUpdateBtn.classList.remove('hidden');
     } else {
-        batchActionBar.classList.add('hidden');
+        batchUpdateBtn.classList.add('hidden');
     }
 }
 
