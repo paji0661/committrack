@@ -61,6 +61,8 @@ const entryIdInput = document.getElementById('entry-id');
 const entryFolderIdInput = document.getElementById('entry-folder-id');
 const entryNameInput = document.getElementById('entry-name');
 const entryTypeInput = document.getElementById('entry-type');
+const repeatsGroup = document.getElementById('repeats-group');
+const entryRepeatsInput = document.getElementById('entry-repeats');
 const targetFieldsGroup = document.getElementById('target-fields-group');
 const targetBalanceGroup = document.getElementById('target-balance-group');
 const lblEntryAmount = document.getElementById('lbl-entry-amount');
@@ -941,11 +943,13 @@ shareLedgerForm.addEventListener('submit', async (e) => {
 window.toggleTargetFields = function () {
     const lblDue = document.getElementById('lbl-entry-due');
     if (entryTypeInput.value === 'Target') {
+        repeatsGroup.classList.add('hidden');
         targetFieldsGroup.classList.remove('hidden');
         targetBalanceGroup.classList.remove('hidden');
         lblEntryAmount.textContent = "Monthly Payment Amount";
         if (lblDue) lblDue.textContent = "Target Complete Date (Optional)";
     } else {
+        repeatsGroup.classList.remove('hidden');
         targetFieldsGroup.classList.add('hidden');
         targetBalanceGroup.classList.add('hidden');
         lblEntryAmount.textContent = "Monthly Amount";
@@ -977,6 +981,7 @@ showAddCommitmentBtn.addEventListener('click', () => {
     entryTypeInput.value = 'Fixed';
     entryTotalAmountInput.value = '';
     entryBalanceInput.value = '';
+    entryRepeatsInput.checked = true; // Default to true
     toggleTargetFields();
     editOnlyGroup.classList.add('hidden');
     commitmentModal.classList.remove('hidden');
@@ -996,6 +1001,7 @@ window.openEditCommitmentModal = function (id, fId) {
     entryTotalAmountInput.value = (item.totalAmount && item.totalAmount != item.amount) ? item.totalAmount : '';
     entryAmountInput.value = item.amount;
     entryBalanceInput.value = (item.balance && item.balance != item.amount) ? item.balance : '';
+    entryRepeatsInput.checked = (item.repeats !== 'false'); // Interpret missing or true as checked
     entryDueInput.value = item.dueDate;
     entryStatusInput.value = item.status;
     editOnlyGroup.classList.remove('hidden');
@@ -1014,7 +1020,8 @@ commitmentForm.addEventListener('submit', async (e) => {
         totalAmount: (entryTypeInput.value === 'Target' && entryTotalAmountInput.value) ? entryTotalAmountInput.value : 0,
         amount: entryAmountInput.value,
         balance: (entryTypeInput.value === 'Target' && entryBalanceInput.value) ? entryBalanceInput.value : 0,
-        dueDate: entryDueInput.value, // It's fine to leave this blank or store the complete date. Apps script falls back to current month if empty strings aren't handled well, but the frontend will now label it as "target complete date".
+        dueDate: entryDueInput.value,
+        repeats: entryTypeInput.value === 'Fixed' ? (entryRepeatsInput.checked ? 'true' : 'false') : 'false'
     };
     if (isEdit) {
         payload.id = id;
